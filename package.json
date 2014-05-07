@@ -1,0 +1,11 @@
+{
+  "name": "rise-of-lightCMS",
+  "version": "1.0.0-nodejs",
+  "description": "",
+  "author": "Moritz Willig <moritz.willig@gmail.com>",
+  "dependencies": {
+    "express": "4.1.x",
+    "mysql": "2.1.x"
+  },
+  "engine": "node 0.10.26"
+}
