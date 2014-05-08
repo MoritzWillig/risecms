@@ -15,6 +15,11 @@ app.all('/', function(req, res){
   item.loadByPath(req.url,function(page,error) {
     var httpRes=stat.toHTTP(page,error);
     res.send(httpRes.code,httpRes.data);
+  },{
+    global:{
+      host:"http://127.0.0.1:8800",
+      title:"Test"
+    }
   });
 });
 

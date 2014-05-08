@@ -86,7 +86,7 @@ pageItem={
           if (typeof p[n] !=="undefined") {
             p=p[n];
           } else {
-            if (cg.system.parser.empty_var_is_error) {
+            if (cg.system.parser.undef_item_is_error) {
               err=new stat.states.items.INVALID_ITEM_FILE({description:"invalid variable",name:item,id:id,parseData:parseData});
             } else {
               p="";
@@ -97,7 +97,7 @@ pageItem={
 
         console.log("out ",p);
         if ((!err) && (typeof p==="undefined")) {
-          if (cg.system.parser.empty_var_is_error) {
+          if (cg.system.parser.undef_item_is_error) {
             err=new stat.states,items.INVALID_ITEM_FILE({description:"variable is undefined",name:item,id:id,parseData:parseData});
           } else {
             p="";
@@ -167,16 +167,42 @@ pageItem={
         var parent;
         var hasParent=!!result[0].parent; //to bool
         
-        function accept() {
+        function acceptItem() {
           if (hasParent) {
-            if (item && parent) { console.log("accepted item with parent");
-              //parse parent
-              console.log("parsing ",parent);
-              pageItem.parse(parent,{child:{text:item}},function(finalStr) {
-                callback(finalStr,new stat.states.items.OK());
-              });
-            } //else parent or item not loaded
-          } else { console.log("accept item (no parent)");
+            //check and accept result
+            var dbCallback=function(pResult,error) { console.log("loaded parent");
+              var status=error?error:new stat.states.database.OK();
+              
+              if (stat.isSuccessfull(status)) {
+                parent=pResult;
+              } else {
+                status.info={
+                  method:"createResult - loading parent",
+                  result:pResult,
+                  origin:{
+                    status:err,
+                    result:result[0]
+                  }
+                };
+                parent=status.toString();
+              }
+              
+              callback(parent,new stat.states.items.OK());
+            };
+
+            //load parent
+
+            //add data layer for parent
+            addData.text=item;
+            addData={global:addData.global,child:addData};
+
+            if (checkNumber(result[0].parent)) {
+              pageItem.loadById(result[0].parent,dbCallback,addData);
+            } else {
+              pageItem.loadByName(result[0].parent,dbCallback,addData);
+            }
+          } else {
+            console.log("accept item (no parent)");
             //no parent needed -> return
             callback(item,new stat.states.items.OK());
           }
@@ -188,42 +214,14 @@ pageItem={
           if (!stat.isSuccessfull(err)) {
             callback(null,new stat.states.items.ITEM_ERROR({description:"loading resource string",id:result[0].id,type:result[0].type,error:err}));
           } else {
-            pageItem.parse(data,{},function(itemStr) {
+            //TODO add some item specific infos here (id,title,...)
+            //addData.text=item;
+            pageItem.parse(data,addData,function(itemStr) {
               item=itemStr;
-              accept();
+              acceptItem();
             });
           }
         });
-
-        //load parent
-        if (hasParent) {
-          //check and accept result
-          var dbCallback=function(pResult,error) { console.log("loaded parent");
-            var status=error?error:new stat.states.database.OK();
-            
-            if (status instanceof stat.states.items.OK) {
-              parent=pResult;
-            } else {
-              status.info={
-                method:"createResult - loading parent",
-                result:pResult,
-                origin:{
-                  status:err,
-                  result:result[0]
-                }
-              };
-              parent=status.toString();
-            }
-            accept();
-          };
-
-          parse with child data only!!!
-          if (checkNumber(result[0].parent)) {
-            pageItem.loadById(result[0].parent,dbCallback);
-          } else {
-            pageItem.loadByName(result[0].parent,dbCallback);
-          }
-        }
       } else {
         //error item does not exist
         callback(null,new stat.states.items.NOT_FOUND({result:result,error:err}));
