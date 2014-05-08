@@ -20,9 +20,10 @@ function unrequire(module) {
 pageItem={
   /**
    * @param text text to parse
+   * @param parseData additional data which can be used by templates
    * @param callback function(string,status) parsed text; status
   **/
-  parse:function(text,parseData,callback) { console.log("parseData: ",parseData);
+  parse:function(text,parseData,callback) { //console.log("parseData: ",parseData);
     text=text.toString();
 
     var cache=[];
@@ -40,7 +41,7 @@ pageItem={
     //accept item and insert into result
     function accept(id,data,status) {
       if (id!=-1) { //main item is id=-1
-        console.log("recived ",id," -> ",data);
+        console.log("recived ",id," -> [",(typeof data),"]");
         if (stat.isSuccessfull(status)) {
           cache[id]=data;
         } else {
@@ -60,6 +61,10 @@ pageItem={
         callback(text,new stat.states.items.OK());
       }
     }
+
+    //add new layer to pass data on to item childs
+    //but read variables from current scope!
+    var parseDataCh={parent:parseData,global:parseData.global};
 
     for (var c in cache) { (function() { //replace this closure with let, if supported
       var item=cache[c];
@@ -81,7 +86,7 @@ pageItem={
         for (var i in v) {
           var n=v[i];
 
-          console.log("set p by ",n," in ",p," to ",p[n]);
+          //console.log("set p by ",n," in ",p," to ",p[n]);
 
           if (typeof p[n] !=="undefined") {
             p=p[n];
@@ -95,7 +100,7 @@ pageItem={
           }
         }
 
-        console.log("out ",p);
+        //console.log("out ",p);
         if ((!err) && (typeof p==="undefined")) {
           if (cg.system.parser.undef_item_is_error) {
             err=new stat.states,items.INVALID_ITEM_FILE({description:"variable is undefined",name:item,id:id,parseData:parseData});
@@ -103,8 +108,7 @@ pageItem={
             p="";
           }
         }
-        console.log("out ",p);
-
+        
         if (!err) {
           accept(id,p.toString(),new stat.states.items.OK);
         } else {
@@ -114,9 +118,9 @@ pageItem={
       } else {
         //load from db
         if (checkNumber(item)) { console.log("item "+item);
-          pageItem.loadById(item,dbCallback);
+          pageItem.loadById(item,dbCallback,parseDataCh);
         } else {
-          pageItem.loadByName(item,dbCallback);
+          pageItem.loadByName(item,dbCallback,parseDataCh);
         }
       }
       })();
@@ -125,6 +129,12 @@ pageItem={
     //try load (if no sub items exist)
     accept(-1,null,new stat.states.items.OK());
   },
+  /**
+   * return item template (from file template or script result)
+   * @param id id of the item to be loaded
+   * @param type type of the loaded item file to be interpreted
+   * @param callback function to call if the item string is created
+  **/
   getResourceString:function(id,type,callback) {
     var path=fsanchor.resolve(id,"storage");
 
@@ -144,6 +154,7 @@ pageItem={
         var status;
 
         function cb(str) {
+          //TODO add caching system
           unrequire(path);
           callback(str,new stat.states.items.OK());
         }
@@ -159,6 +170,13 @@ pageItem={
         callback(null,new stat.states.UNKNOWN_RESOURCE_TYPE({id:id,type:type}));
     }
   },
+  /**
+   * interprets query result with aditional data to item string
+   * @param result query result
+   * @param err error status from query
+   * @param callback function to be called if finished
+   * @param addData additional data to be used in templates and scripts
+  **/
   createResult:function(result,err,callback,addData) {
     if (!err) {
       if ((result) && (result[0])) { console.log("loading storage/"+result[0].id);
