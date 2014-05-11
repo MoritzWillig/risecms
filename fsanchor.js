@@ -15,7 +15,7 @@ fsanchor={
   },
   resolve:function(path,root) {
     var res=fpath.normalize(roots[root]+"/"+path);
-    console.log("resolving",root,path,"->",res);
+    //console.log("resolving",root,path,"->",res);
     return res;
   }
 }

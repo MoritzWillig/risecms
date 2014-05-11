@@ -33,7 +33,7 @@ pageItem={
     var requestId=0;
     text=text.replace(/([^\\]|^){{(.*?)}}/g,function(match,pre,data) {
       missing++;
-      cache.push(data);
+      cache.push(data.split("|",2));
 
       return pre+"{{"+requestId+++"}}";
     });
@@ -41,7 +41,7 @@ pageItem={
     //accept item and insert into result
     function accept(id,data,status) {
       if (id!=-1) { //main item is id=-1
-        console.log("recived ",id," -> [",(typeof data),"]");
+        //console.log("recived ",id," -> [",(typeof data),"]");
         if (stat.isSuccessfull(status)) {
           cache[id]=data;
         } else {
@@ -62,13 +62,38 @@ pageItem={
       }
     }
 
-    //add new layer to pass data on to item childs
-    //but read variables from current scope!
-    var parseDataCh={parent:parseData,global:parseData.global};
-
-    for (var c in cache) { (function() { //replace this closure with let, if supported
-      var item=cache[c];
+    for (var c in cache) { (function() { //replace this closure with let, if supported (cange return statement at try catch!!!)
       var id=c;
+
+      var item=cache[c][0];
+      var itemAddData;
+      try {
+        if (typeof cache[c][1]=="string") {
+          cache[c][1]=cache[c][1].replace(/\\\}\\\}/g,"}}"); //replace "\}\}" with "}}"
+          itemAddData=JSON.parse(cache[c][1]); //parse json
+        } else {
+          itemAddData={};
+        }
+      } catch (e) {
+        var err=new stat.states.items.INVALID_ITEM_FILE({
+          description:"error parsing additional data",
+          parseStr:cache[c][1],
+          name:item,
+          id:id,
+          parseData:parseData,
+          error:{
+            errorObj:e,
+            msg:e.message
+          }
+        });
+        accept(id,null,err);
+        return;
+      }
+
+      //add new layer to pass data on to item childs
+      //but read variables from current scope!
+      var parseDataCh={parent:parseData,inline:itemAddData,global:parseData.global};
+      //console.log("sub item => ",item," additional ",parseDataCh.inline);
 
       //check and accept result
       var dbCallback=function(result,error) {
@@ -77,7 +102,7 @@ pageItem={
       };
       
       //load item
-      if ((item[0]) && (item[0]=="$")) { console.log("found var "+item);
+      if ((item[0]) && (item[0]=="$")) { //console.log("found var "+item);
         //search for env var
         var v=item.substr(1,item.length).split(".");
         
@@ -135,7 +160,7 @@ pageItem={
    * @param type type of the loaded item file to be interpreted
    * @param callback function to call if the item string is created
   **/
-  getResourceString:function(id,type,callback) {
+  getResourceString:function(id,type,addData,callback) {
     var path=fsanchor.resolve(id,"storage");
 
     switch (type) {
@@ -155,19 +180,31 @@ pageItem={
 
         function cb(str) {
           //TODO add caching system
-          unrequire(path);
+          //unrequire(path);
           callback(str,new stat.states.items.OK());
         }
 
         try {
           var script=require(path);
-          result=script(cb);
+          result=script(addData,cb);
         } catch(e) {
-          callback(null,new stat.states.ITEM_ERROR({description:"executing script",id:id,type:type,error:e}));
+          callback(null,new stat.states.items.ITEM_ERROR({
+            description:"executing script",
+            id:id,
+            type:type,
+            error:{
+              errorObj:e,
+              msg:e.message,
+              trace:e.stack.replace(/\n/g,"\n<br>")
+            }
+          }));
         }
         break;
+      case "data":
+        callback(null,"DATA ITEMS ARE CURRENTLY NOT SUPPORTED");
+        break;
       default:
-        callback(null,new stat.states.UNKNOWN_RESOURCE_TYPE({id:id,type:type}));
+        callback(null,new stat.states.items.UNKNOWN_RESOURCE_TYPE({id:id,type:type}));
     }
   },
   /**
@@ -227,7 +264,7 @@ pageItem={
         }
 
         //load & parse item
-        pageItem.getResourceString(result[0].id,result[0].type,function(data,err) {
+        pageItem.getResourceString(result[0].id,result[0].type,addData,function(data,err) {
           console.log("loading resouce");
           if (!stat.isSuccessfull(err)) {
             callback(null,new stat.states.items.ITEM_ERROR({description:"loading resource string",id:result[0].id,type:result[0].type,error:err}));
