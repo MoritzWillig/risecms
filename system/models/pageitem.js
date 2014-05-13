@@ -33,7 +33,12 @@ pageItem={
     var requestId=0;
     text=text.replace(/([^\\]|^){{(.*?)}}/g,function(match,pre,data) {
       missing++;
-      cache.push(data.split("|",2));
+      var idx=data.indexOf("|");
+      if (idx==-1) {
+        cache.push([data]);
+      } else {
+        cache.push([data.substr(0,idx),data.substr(idx+1,data.length)]);
+      }
 
       return pre+"{{"+requestId+++"}}";
     });
@@ -67,86 +72,124 @@ pageItem={
 
       var item=cache[c][0];
       var itemAddData;
-      try {
-        if (typeof cache[c][1]=="string") {
-          cache[c][1]=cache[c][1].replace(/\\\}\\\}/g,"}}"); //replace "\}\}" with "}}"
-          itemAddData=JSON.parse(cache[c][1]); //parse json
-        } else {
-          itemAddData={};
-        }
-      } catch (e) {
-        var err=new stat.states.items.INVALID_ITEM_FILE({
-          description:"error parsing additional data",
-          parseStr:cache[c][1],
-          name:item,
-          id:id,
-          parseData:parseData,
-          error:{
-            errorObj:e,
-            msg:e.message
-          }
-        });
-        accept(id,null,err);
-        return;
-      }
 
-      //add new layer to pass data on to item childs
-      //but read variables from current scope!
-      var parseDataCh={parent:parseData,inline:itemAddData,global:parseData.global};
-      //console.log("sub item => ",item," additional ",parseDataCh.inline);
+      function loadWithData() {
+        //add new layer to pass data on to item childs
+        //but read variables from current scope!
+        var parseDataCh={parent:parseData,data:itemAddData,global:parseData.global};
+        //console.log("sub item => ",item," additional ",parseDataCh.inline);
 
-      //check and accept result
-      var dbCallback=function(result,error) {
-        status=error?error:new stat.states.database.OK();
-        accept(id,result,status);
-      };
-      
-      //load item
-      if ((item[0]) && (item[0]=="$")) { //console.log("found var "+item);
-        //search for env var
-        var v=item.substr(1,item.length).split(".");
+        //check and accept result
+        var dbCallback=function(result,error) {
+          status=error?error:new stat.states.database.OK();
+          accept(id,result,status);
+        };
         
-        var p=parseData;
-        var err;
-        for (var i in v) {
-          var n=v[i];
+        //load item
+        if ((item[0]) && (item[0]=="$")) { //console.log("found var "+item);
+          //search for env var
+          var v=item.substr(1,item.length).split(".");
+          
+          var p=parseData;
+          var err;
+          for (var i in v) {
+            var n=v[i];
 
-          //console.log("set p by ",n," in ",p," to ",p[n]);
+            //console.log("set p by ",n," in ",p," to ",p[n]);
 
-          if (typeof p[n] !=="undefined") {
-            p=p[n];
-          } else {
+            if (typeof p[n] !=="undefined") {
+              p=p[n];
+            } else {
+              if (cg.system.parser.undef_item_is_error) {
+                err=new stat.states.items.INVALID_ITEM_FILE({description:"invalid variable",name:item,id:id,parseData:parseData});
+              } else {
+                p="";
+              }
+              break;
+            }
+          }
+
+          //console.log("out ",p);
+          if ((!err) && (typeof p==="undefined")) {
             if (cg.system.parser.undef_item_is_error) {
-              err=new stat.states.items.INVALID_ITEM_FILE({description:"invalid variable",name:item,id:id,parseData:parseData});
+              err=new stat.states,items.INVALID_ITEM_FILE({description:"variable is undefined",name:item,id:id,parseData:parseData});
             } else {
               p="";
             }
-            break;
           }
-        }
-
-        //console.log("out ",p);
-        if ((!err) && (typeof p==="undefined")) {
-          if (cg.system.parser.undef_item_is_error) {
-            err=new stat.states,items.INVALID_ITEM_FILE({description:"variable is undefined",name:item,id:id,parseData:parseData});
+          
+          if (!err) {
+            accept(id,p.toString(),new stat.states.items.OK);
           } else {
-            p="";
+            accept(id,null,err);
+          }
+
+        } else {
+          //load from db
+          if (checkNumber(item)) { console.log("item "+item);
+            pageItem.loadById(item,dbCallback,parseDataCh);
+          } else {
+            pageItem.loadByName(item,dbCallback,parseDataCh);
           }
         }
-        
-        if (!err) {
-          accept(id,p.toString(),new stat.states.items.OK);
+      };
+      
+      if (typeof cache[c][1]=="string") {
+        if ((cache[c][1][0]) && (cache[c][1][0]=="$")) {
+          //load parse json
+          try {
+            cache[c][1]=cache[c][1].substr(1,cache[c][1].length); //remove "$"
+            cache[c][1]=cache[c][1].replace(/\\\}\\\}/g,"}}"); //replace "\}\}" with "}}"
+            itemAddData=JSON.parse(cache[c][1]); //parse json
+          } catch (e) {
+            var err=new stat.states.items.INVALID_ITEM_FILE({
+              description:"error parsing additional data",
+              parseStr:cache[c][1],
+              name:item,
+              id:id,
+              parseData:parseData,
+              error:{
+                errorObj:e,
+                msg:e.message
+              }
+            });
+            accept(id,null,err);
+            return;
+          }
+          loadWithData();
         } else {
-          accept(id,null,err);
-        }
+          //load data from item
 
-      } else {
-        //load from db
-        if (checkNumber(item)) { console.log("item "+item);
-          pageItem.loadById(item,dbCallback,parseDataCh);
-        } else {
-          pageItem.loadByName(item,dbCallback,parseDataCh);
+          function handleDataReturn(data,e) {
+            if (!stat.isSuccessfull(e)) {
+              var err=new stat.states.items.INVALID_ITEM_FILE({
+                description:"loading item data",
+                parseStr:cache[c][1],
+                name:item,
+                id:id,
+                parseData:parseData,
+                error:{
+                  errorObj:e,
+                  msg:e.message
+                }
+              });
+              accept(id,null,err);
+              return;
+            } else {
+              itemAddData=data;
+              loadWithData();
+            }
+          }
+
+          if (checkNumber(cache[c][1])) {
+            pageItem.loadById(cache[c][1],handleDataReturn,parseData);
+          } else {
+            pageItem.loadWithData(cache[c][1],handleDataReturn,parseData);
+          }
         }
+      } else {
+        itemAddData={};
+        loadWithData();
       }
       })();
     }
@@ -201,10 +244,43 @@ pageItem={
         }
         break;
       case "data":
-        callback(null,"DATA ITEMS ARE CURRENTLY NOT SUPPORTED");
+        callback(null,new stat.states.items.INVALID_ITEM_FILE({
+          description:"data items can not be parsed"
+        }));
         break;
       default:
         callback(null,new stat.states.items.UNKNOWN_RESOURCE_TYPE({id:id,type:type}));
+    }
+  },
+  /**
+   * returns item data as object
+   * @param id id of the item to be loaded
+   * @param type type of the loaded item file
+   * @param callback function to call if the item string is created
+  **/
+  getResourceData:function(id,type,addData,callback) {
+    var path=fsanchor.resolve(id,"storage");
+
+    switch (type) {
+      case "data":
+        fs.readFile(path,function(err,data) {
+          if (err) {
+            callback(null,new stat.states.items.INVALID_ITEM_FILE({id:id,type:type}));
+          } else {
+            try {
+              data=JSON.parse(data);
+              callback(data,new stat.states.items.OK());
+            } catch(e) {
+              callback(null,new stat.states.items.INVALID_ITEM_FILE({id:id,type:type,msg:"JSON"}));
+            }
+          }
+        });
+        break;
+      default:
+        callback(null,new stat.states.items.INVALID_ITEM_FILE({
+          description:"item types other than data can not be loaded as JSON"
+        }));
+        break;
     }
   },
   /**
@@ -217,6 +293,18 @@ pageItem={
   createResult:function(result,err,callback,addData) {
     if (!err) {
       if ((result) && (result[0])) { console.log("loading storage/"+result[0].id);
+        if (result[0].type=="data") {
+          pageItem.getResourceData(result[0].id,result[0].type,addData,function(data,err) {
+            console.log("loading data");
+            if (!stat.isSuccessfull(err)) {
+              callback(null,new stat.states.items.ITEM_ERROR({description:"loading resource data",id:result[0].id,type:result[0].type,error:err}));
+            } else {
+              callback(data,new stat.states.database.OK());
+            }
+          });
+          return;
+        }//else load other item types
+
         //combine with parent
         var item;
         var parent;
