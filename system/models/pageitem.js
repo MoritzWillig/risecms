@@ -31,7 +31,19 @@ pageItem={
 
     //parse text for "{{...}}"
     var requestId=0;
-    text=text.replace(/([^\\]|^){{(.*?)}}/g,function(match,pre,data) {
+    //console.log("searching text ",text);
+    text=text.replace(/(\\?){{(.*?)}}/g,function(match,pre,data) {
+      if (pre=="\\") {
+        /*
+          simulate lookbehind to make it possible to escape {{...}} with \
+          we can not use [^\\] here as this would imply an preceding caracter
+          not already matched by another group (=> matching "{{text}}{{other_text}}" 
+          would not match the secoond group)
+        */
+        return match;
+      }
+
+      //console.log("found match ",">"+pre+"<",":",data);
       missing++;
       var idx=data.indexOf("|");
       if (idx==-1) {
@@ -50,7 +62,14 @@ pageItem={
         if (stat.isSuccessfull(status)) {
           cache[id]=data;
         } else {
-          status.info={method:"parse accepting sub-item",id:id,data:data,origin:status.info};
+          status.info={
+            method:"parse accepting sub-item",
+            id:id,
+            requested_name:cache[id][0],
+            requested_data:cache[id][1],
+            data:data,
+            origin:status.info
+          };
           cache[id]=status.toString();
         }
       }
@@ -60,7 +79,8 @@ pageItem={
       if (missing==0) {
         //replace sub-items
         var requestId=0;
-        text=text.replace(/([^\\]|^){{(.*?)}}/g,function(match,pre,data) {
+        text=text.replace(/(\\?){{(.*?)}}/g,function(match,pre,data) {
+          if (pre=="\\") { /*simulate lookbehind, see description above */ return match; }
           return pre+cache[requestId++];
         });
         callback(text,new stat.states.items.OK());
@@ -184,7 +204,7 @@ pageItem={
           if (checkNumber(cache[c][1])) {
             pageItem.loadById(cache[c][1],handleDataReturn,parseData);
           } else {
-            pageItem.loadWithData(cache[c][1],handleDataReturn,parseData);
+            loadWithData(cache[c][1],handleDataReturn,parseData);
           }
         }
       } else {
