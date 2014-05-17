@@ -146,7 +146,7 @@ pageItem={
 
         } else {
           //load from db
-          if (checkNumber(item)) { console.log("item "+item);
+          if (checkNumber(item)) {
             pageItem.loadById(item,dbCallback,parseDataCh);
           } else {
             pageItem.loadByName(item,dbCallback,parseDataCh);
