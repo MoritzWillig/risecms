@@ -16,7 +16,9 @@ var backupSettings={
   systemPath:fpath.resolve(__dirname,"../"),
   backupPathParam:false, //backup path was set by parameter
   backupPath:"",
-  forceOverwrite:false //force overwriting existing system was set by parameter
+  forceOverwrite:false, //force overwriting existing system was set by parameter
+  altDb:undefined, //alternative database name
+  altTable:undefined //alternative table name
 }
 
 for (var i=2; i<process.argv.length; i++) {
@@ -32,6 +34,15 @@ for (var i=2; i<process.argv.length; i++) {
   }
   if (val=='-f') {
     backupSettings.forceOverwrite=true;
+  }
+
+  if (val.substr(0,3)=='-db') {
+    var p=val.substr(3,val.length);
+    backupSettings.altDb=p;
+  }
+  if (val.substr(0,3)=='-tb') {
+    var p=val.substr(3,val.length);
+    backupSettings.altTable=p;
   }
 };
 
@@ -145,10 +156,14 @@ function setConfig() {
 
 function loadDb() {
   console.log("creating database structure");
+
+  var dbName=backupSettings.altDb   ?backupSettings.altDb   :cg.database.pageDb;
+  var tbName=backupSettings.altTable?backupSettings.altTable:cg.database.pageTable;
+
   var dbCmds=[
-    ["CREATE DATABASE  IF NOT EXISTS ?? /*!40100 DEFAULT CHARACTER SET latin1 */",[cg.database.pageDb]],
-    ["USE ??",[cg.database.pageDb]],
-    ["DROP TABLE IF EXISTS ??",[cg.database.pageTable]],
+    ["CREATE DATABASE  IF NOT EXISTS ?? /*!40100 DEFAULT CHARACTER SET latin1 */",[dbName]],
+    ["USE ??",[dbName]],
+    ["DROP TABLE IF EXISTS ??",[tbName]],
     ["CREATE TABLE ?? (\
       `id` int(11) NOT NULL AUTO_INCREMENT,\
       `section` varchar(45) NOT NULL,\
@@ -160,9 +175,10 @@ function loadDb() {
       `type` varchar(45) NOT NULL DEFAULT 'static',\
       `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\
       PRIMARY KEY (`id`)\
-    ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT=' '",[cg.database.pageTable]]
+    ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT=' '",[tbName]]
   ];
   
+  //remove db entry to prevent connecting to non existing db
   var dbSave=cg.database.pageDb;
   cg.database.pageDb=undefined;
   db=require("../system/models/database").getInstance();
@@ -209,13 +225,13 @@ function loadDb() {
 
         if (row.id>maxId) { maxId=row.id; }
       }
-      db.query(query+rows.join(','),[cg.database.pageTable],function(err, result) {
+      db.query(query+rows.join(','),[tbName],function(err, result) {
         if (err) { throw err; }
 
         //set new auto_increment
         maxId++;
         console.log("next auto increment is",maxId);
-        db.query("ALTER TABLE ?? AUTO_INCREMENT = ?",[cg.database.pageTable,maxId],function(err,result) {
+        db.query("ALTER TABLE ?? AUTO_INCREMENT = ?",[tbName,maxId],function(err,result) {
           if (err) {throw err; }
           nextStage();
         })
