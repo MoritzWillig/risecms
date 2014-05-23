@@ -3,6 +3,7 @@ stat=require("../../status");
 db=require("./database").getInstance();
 fs=require("fs");
 fsanchor=require("../../fsanchor.js");
+plugins=require("../controllers/pluginHandler.js");
 
 //helper function to check wether or not an variable is an number
 function checkNumber(x) {
@@ -226,13 +227,19 @@ pageItem={
   getResourceString:function(id,type,addData,callback) {
     var path=fsanchor.resolve(id,"storage");
 
+    var evtObj={id:id, type:type, data:addData};
+    plugins.trigger("itemStr.pre",evtObj);
+    id=evtObj.id; type=evtObj.type; addData=evtObj.data;
+
     switch (type) {
       case "static":
         fs.readFile(path,function(err,data) {
           if (err) {
             callback(null,new stat.states.items.INVALID_ITEM_FILE({id:id,type:type}));
           } else {
-            callback(data,new stat.states.items.OK());
+            var evtObj={id:id, type:type, string:data, data:addData};
+            plugins.trigger("itemStr.post",evtObj);
+            callback(evtObj.string,new stat.states.items.OK());
           }
         });
         break;
@@ -244,7 +251,9 @@ pageItem={
         function cb(str) {
           //TODO add caching system
           //unrequire(path);
-          callback(str,new stat.states.items.OK());
+          var evtObj={id:id, type:type, string:str, data:addData};
+          plugins.trigger("itemStr.post",evtObj);
+          callback(evtObj.string,new stat.states.items.OK());
         }
 
         try {
@@ -412,6 +421,11 @@ pageItem={
     });
   }
 };
+
+(function registerEvents() {
+  plugins.registerEvent("itemStr.pre");
+  plugins.registerEvent("itemStr.post");
+})();
 
 
 module.exports=pageItem;

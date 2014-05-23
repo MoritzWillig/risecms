@@ -1,9 +1,11 @@
 //load configuration
 var cg=require('./config.js');
 var item=require("./system/models/pageitem.js");
+var plugins=require("./system/controllers/pluginHandler.js");
 var stat=require("./status.js");
 var fsanchor=require("./fsanchor.js");
 fsanchor.set("storage","./storage/");
+fsanchor.set("plugins","./plugins/");
 
 var express=require('express');
 
@@ -35,3 +37,12 @@ app.use(function(err,req,res,next) {
 var server = app.listen(cg.http.port, cg.http.host, function() {
   console.log('Listening on port %d', server.address().port);
 });
+
+for (var i in cg.system.plugins) {
+  console.log("loading plugin",cg.system.plugins[i]);
+  var path=fsanchor.resolve(cg.system.plugins[i],"plugins");
+  var plugin=require(path);
+
+  plugins.registerPlugin(plugin);
+  plugin(plugins);
+}
