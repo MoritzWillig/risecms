@@ -1,9 +1,27 @@
+var fsanchor=require("../../fsanchor");
+var express=require("express");
 
 /**
  * manages all loaded plugins provides events to system interfaces
  * @type {Object}
  */
 pluginHandler={
+  
+  /**
+   * app the plugin handler is bound to
+   * @type {express app}
+   */
+  app:undefined,
+
+  /**
+   * binds the plugin handler to a given app
+   * @param  {express app} app express app for the plugin handler
+   * @return {undefined}
+   */
+  setup:function(app) {
+    this.app=app;
+  },
+
   /**
    * contains the plugin objects
    * @type {Object}
@@ -12,12 +30,20 @@ pluginHandler={
 
   /**
    * registers an plugin and adds it to the plugins list
-   * @param  {String} name
-   * @param  {Object} object
+   * @param  {String} name name of the plugin
+   * @param  {Object} path path to the plugin folder
    * @return {undefined}
    */
-  registerPlugin:function(name,object) {
-    this.plugins[name]=object;
+  registerPlugin:function(name,path) {
+    //get and save plugin function
+    var plugin=require(path);
+    this.plugins[name]=plugin;
+    
+    var pluginsContent=fsanchor.resolve(name+"/content","plugins");
+    this.registerRoute("/content/plugins/"+name,express.static(pluginsContent));
+
+    //start plugin
+    plugin(this);
   },
 
   /**
@@ -107,6 +133,55 @@ pluginHandler={
   trigger:function(name,data) {
     var chain=this.getEventChain(name);
     for (var i in chain) { chain[i](name,data); }
+  },
+  
+
+  pluginPaths:[],
+
+  /**
+   * registers an route for an plugin to be handled differently than by the default cms mechanism
+   * @param  {String/Regex} path    path to be handled
+   * @param  {Function} handler handler to be called
+   * @return {undefined}
+   */
+  registerRoute:function(path,handler) {
+    this.pluginPaths.push({
+      path:path,
+      handler:handler
+    });
+  },
+
+  /**
+   * plugin path middleware. bind this as middleware to check if a path was reigstered by a plugin
+   * @param  {Request}   req  default req parameter
+   * @param  {Response}   res  default res parameter
+   * @param  {Function} next default next parameter
+   * @return {undefined}
+   */
+  handlePluginPaths:function(req,res,next) {
+    var match=false;
+    
+    for (var i=0; i<this.pluginPaths.length; i++) {
+      var path=this.pluginPaths[i];
+      if (typeof path.path=="string") {
+        if (req.path.substr(0,path.path.length)==path.path) { match=true; }
+      } else {
+        if (req.path.match(path.path)) { match=true; }
+      }
+
+      if (match) {
+        if (typeof path.path=="string") {
+          req.url=req.url.substr(path.path.length,req.url.length);
+        } else {
+          var res=path.path.exec(req.url);
+          req.url=req.url.substr(res[0].length,req.url.length);
+        }
+
+        path.handler(req,res,next); return;
+      }
+    }
+
+    next();
   }
 };
 
