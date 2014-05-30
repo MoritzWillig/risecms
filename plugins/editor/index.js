@@ -5,6 +5,7 @@ pageItem=require("../../system/models/pageitem.js");
 
 var sourceTracker={
   addStrTrace:function(event,data) {
+    console.log(">>",data.addData.data);
     var dataTag=((data.addData.data)&&(typeof data.addData.data._debugId!="undefined"))?
       "data-dataId='"+(data.addData.data._debugId)+"'":
       "";
