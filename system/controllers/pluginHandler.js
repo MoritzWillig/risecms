@@ -12,14 +12,21 @@ pluginHandler={
    * @type {express app}
    */
   app:undefined,
+  /**
+   * routers to the different app paths
+   * @type {Array[Router]}
+   */
+  routers:undefined,
 
   /**
    * binds the plugin handler to a given app
    * @param  {express app} app express app for the plugin handler
+   * @param {[Routers]} routers a list of routers to be used by plugins
    * @return {undefined}
    */
-  setup:function(app) {
+  setup:function(app,routers) {
     this.app=app;
+    this.routers=routers;
   },
 
   /**
@@ -40,7 +47,7 @@ pluginHandler={
     this.plugins[name]=plugin;
     
     var pluginsContent=fsanchor.resolve(name+"/content","plugins");
-    this.registerRoute("/content/plugins/"+name,express.static(pluginsContent));
+    this.registerRoute("content","/"+name,express.static(pluginsContent));
 
     //start plugin
     plugin(this);
@@ -134,54 +141,17 @@ pluginHandler={
     var chain=this.getEventChain(name);
     for (var i in chain) { chain[i](name,data); }
   },
-  
-
-  pluginPaths:[],
 
   /**
-   * registers an route for an plugin to be handled differently than by the default cms mechanism
-   * @param  {String/Regex} path    path to be handled
-   * @param  {Function} handler handler to be called
+   * registers a route for a plugin
+   * @param  {String} name    name of the router to be used
+   * @param  {String/Regex} path    route path
+   * @param  {Function} handler handler to be called on path match
    * @return {undefined}
    */
-  registerRoute:function(path,handler) {
-    this.pluginPaths.push({
-      path:path,
-      handler:handler
-    });
-  },
-
-  /**
-   * plugin path middleware. bind this as middleware to check if a path was reigstered by a plugin
-   * @param  {Request}   req  default req parameter
-   * @param  {Response}   res  default res parameter
-   * @param  {Function} next default next parameter
-   * @return {undefined}
-   */
-  handlePluginPaths:function(req,res,next) {
-    var match=false;
-    
-    for (var i=0; i<this.pluginPaths.length; i++) {
-      var path=this.pluginPaths[i];
-      if (typeof path.path=="string") {
-        if (req.path.substr(0,path.path.length)==path.path) { match=true; }
-      } else {
-        if (req.path.match(path.path)) { match=true; }
-      }
-
-      if (match) {
-        if (typeof path.path=="string") {
-          req.url=req.url.substr(path.path.length,req.url.length);
-        } else {
-          var res=path.path.exec(req.url);
-          req.url=req.url.substr(res[0].length,req.url.length);
-        }
-
-        path.handler(req,res,next); return;
-      }
-    }
-
-    next();
+  registerRoute:function(name,path,handler) {
+    //TODO: move into register function and pass as parameter to plugin
+    this.routers[name].use(path,handler);
   }
 };
 

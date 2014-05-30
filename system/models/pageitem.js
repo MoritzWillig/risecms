@@ -419,6 +419,64 @@ pageItem={
     var query=db.query('SELECT * FROM ?? WHERE path=?',[cg.database.pageTable,path],function(err, result) {
       pageItem.createResult(result,err,callback,data);
     });
+  },
+  getHeader:function(id,callback) {
+    db.query('SELECT * FROM ?? WHERE id=?',[cg.database.pageTable,id],function(err,result) {
+      if (err) { callback(new stat.status.database.DATABASE_ERROR({error:err}),null); return; }
+
+      if ((result) && (result[0])) {
+        callback(new stat.states.items.OK(),result[0]);
+      } else {
+        callback(new stat.states.items.NOT_FOUND(),null);
+      }
+    });
+  },
+  setHeader:function(id,data,callback) {
+    var update=(typeof id!="undefined");
+
+    var values=[];
+    var names =[];
+    var placeholdersVal =[];
+    var placeholdersName=[];
+
+    for (var name in data) {
+      if (name=="id") {
+        callback(new stat.states.database.DATABASE_ERROR("the id property can not be set or changed"));
+        return;
+      }
+
+      if (update) {
+        placeholdersVal.push("??=?");
+        values.push(name,data[name]);
+      } else {
+        placeholdersName.push("??");
+        placeholdersVal .push("?" );
+        names .push(name);
+        values.push(data[name]);
+      }
+    }
+
+    var placeholdersValStr =placeholdersVal .join(",");
+    var placeholdersNameStr=placeholdersName.join(",");
+
+    var query;
+    var params;
+    if (update) {
+      query ="UPDATE ?? SET "+placeholdersValStr+" WHERE id=?";
+      params=[].concat(cg.database.pageTable,values,id);
+    } else {
+      query ="INSERT INTO ?? ("+placeholdersNameStr+") VALUES ("+placeholdersValStr+")";
+      params=[].concat(cg.database.pageTable,names,values);
+    }
+
+    //console.log(query,params);
+    db.query(query,params,function(err,result) {
+      if (err) {
+        callback(new stat.states.database.DATABASE_ERROR({err:err,errStr:err.toString()}),null);
+      } else {
+        callback(new stat.states.items.OK(),result);
+      }
+    });
   }
 };
 

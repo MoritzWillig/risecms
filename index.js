@@ -12,13 +12,35 @@ fsanchor.set("plugins","./plugins/");
 var express=require('express');
 
 var app=express();
-plugins.setup(app);
 
-app.use(function(req,res,next) {
-  pluginHandler.handlePluginPaths(req,res,next);
+
+/*
+ * content, api & plugin routes
+ */
+contentRouter=express.Router();
+  contentPluginRouter=express.Router();
+  contentRouter.use("/plugins",contentPluginRouter); //map plugins under /content/plugins/
+contentRouter.use(express.static("public/content")); //map default content dir
+app.use("/content",contentRouter);
+
+
+apiRouter=express.Router();
+app.use("/api",apiRouter);
+
+pluginRouter=express.Router();
+app.use("/plugins",pluginRouter);
+
+
+plugins.setup(app,{
+  content:contentPluginRouter,
+  api:apiRouter,
+  plugins:pluginRouter
 });
-app.use("/content",express.static("public/content"));
 
+
+/*
+ * CMS routing
+ */
 app.use('/', function(req, res) {
   item.loadByPath(req.url,function(page,error) {
     var httpRes=stat.toHTTP(page,error);
@@ -29,10 +51,6 @@ app.use('/', function(req, res) {
       title:"Test"
     }
   });
-});
-
-app.use(function(req,res) {
-  res.send(404,"Not found!");
 });
 
 app.use(function(err,req,res) {

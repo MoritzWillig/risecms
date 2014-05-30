@@ -1,0 +1,87 @@
+
+#editScreenBg { 
+  position:absolute;
+  top:0px;
+  left:0px;
+  width:100%;
+  height:100%;
+}
+
+#editScreenWindow {
+  background-color:#ddd;
+  border:1px solid #f80;
+  position:absolute;
+  top:3%;
+  left:2%;
+  width:96%;
+  height:94%;
+}
+
+#editScreenTitlebar {
+  text-align:right;
+  height:20px;
+  background-color:#222;
+}
+
+#editScreenSources {
+  height:calc(100% - 20px);
+  width:200px;
+  float:left;
+  background-color: #000;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+
+#editScreenHeader {
+  height:44px;
+  background-color: #111;
+  border-bottom: 1px solid #000;
+
+  white-space: nowrap;
+  overflow-y:hidden;
+  overflow-x:scroll;
+}
+
+.editScreenHead {
+  width:100px;
+}
+
+#editScreen { 
+  height:calc(100% - 90px);
+  font-size:12pt;
+}
+
+#editScreenFooter {
+  height:24px;
+  background-color: #111;
+  border-top: 1px solid #000;
+}
+
+#editScreenClose {
+  height:100%;
+  width:50px;
+  display:inline-block;
+  background-color:#800;
+  text-align:center;
+  color:#fff;
+  cursor:pointer;
+}
+
+.editScreenSourceEntry {
+  background-color:#000;
+  padding:5px;
+  color:#aaa;
+  font-weight: bold;
+  border-bottom:1px solid #222;
+  cursor:pointer;
+}
+
+.editScreenSourceEntry:hover {
+  background-color:#111;
+}
+
+.editScreenSourceEntryActive {
+  text-shadow: 0px 0px 5px #8f0,0px 0px 5px #8f0;
+}
