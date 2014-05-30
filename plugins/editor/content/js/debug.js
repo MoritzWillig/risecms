@@ -21,7 +21,9 @@ function findOrigin(node) {
     var c=node;
     while (c.parentNode) {
       if (hasClass(c,"riseCMSDebug")) {
-        return { id:c.dataset.id, tag:c.dataset.tag };
+        //prefer data ids before layout ids
+        var id=c.dataset.dataid?c.dataset.dataid:c.dataset.id;
+        return { id:id, tag:c.dataset.tag, layoutId:c.dataset.id, dataId:c.dataset.dataid };
       }
       c=c.parentNode;
     }
@@ -38,7 +40,8 @@ function findOrigin(node) {
         )) { continue; }
       
       //next closing element with no opening tag is parent
-      var debugData={ id:n.dataset.id, tag:n.dataset.tag };
+      var id=n.dataset.dataid?n.dataset.dataid:n.dataset.id;
+      var debugData={ id:id, tag:n.dataset.tag, layoutId:n.dataset.id, dataId:n.dataset.dataid };
       //console.log("->",debugData.id,debugData.tag);
 
       if (debugData.tag=="open") {
@@ -59,9 +62,8 @@ function findOrigin(node) {
 document.body.ondblclick=function(e,x) {
   if (!editor) {
     var t=e.explicitOriginalTarget?e.explicitOriginalTarget:e.target;
-    console.log("searching source of",t);
     var data=findOrigin(t);
-    console.log("found origin at id ",data.id);
+    console.log("found origin ",t," at id ",data.id);
 
     loadEntry(data.id);
   }
@@ -111,15 +113,21 @@ function openEditor() {
   var srcs=document.getElementById("editScreenSources");
 
   var ids=[];
-  for (var i=0; i<nodes.length; i++) { var src=nodes[i].dataset;
-    if (ids.indexOf(src.id)==-1) {
-      var item=$("<div class='editScreenSourceEntry'>"+src.id+"</div>");
-      item.click(
-        (function(id) {
-          return function() { loadEntry(id); }
-        })(src.id));
+  function addId(id) {
+    if (ids.indexOf(id)==-1) {
+      var item=$("<div class='editScreenSourceEntry'>"+id+"</div>");
+      item.click(function() {
+        loadEntry(id);
+      });
       $(srcs).append(item);
-      ids.push(src.id);
+      ids.push(id);
+    }
+  }
+  for (var i=0; i<nodes.length; i++) {
+    var src=nodes[i].dataset;
+    addId(src.id);
+    if (src.dataid) {
+      addId(src.dataid);
     }
   }
 
