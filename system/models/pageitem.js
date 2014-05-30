@@ -37,7 +37,7 @@ pageItem={
       if (pre=="\\") {
         /*
           simulate lookbehind to make it possible to escape {{...}} with \
-          we can not use [^\\] here as this would imply an preceding caracter
+          we can not use [^\\] here as this would imply an preceding character
           not already matched by another group (=> matching "{{text}}{{other_text}}" 
           would not match the secoond group)
         */
@@ -237,7 +237,7 @@ pageItem={
           if (err) {
             callback(null,new stat.states.items.INVALID_ITEM_FILE({id:id,type:type}));
           } else {
-            var evtObj={id:id, type:type, string:data, data:addData};
+            var evtObj={id:id, type:type, string:data, addData:addData};
             plugins.trigger("itemStr.post",evtObj);
             callback(evtObj.string,new stat.states.items.OK());
           }
@@ -251,7 +251,7 @@ pageItem={
         function cb(str) {
           //TODO add caching system
           //unrequire(path);
-          var evtObj={id:id, type:type, string:str, data:addData};
+          var evtObj={id:id, type:type, string:str, addData:addData};
           plugins.trigger("itemStr.post",evtObj);
           callback(evtObj.string,new stat.states.items.OK());
         }
@@ -290,6 +290,10 @@ pageItem={
   getResourceData:function(id,type,addData,callback) {
     var path=fsanchor.resolve(id,"storage");
 
+    var evtObj={id:id, type:type, addData:addData};
+    plugins.trigger("itemData.pre",evtObj);
+    id=evtObj.id; type=evtObj.type; addData=evtObj.addData;
+    
     switch (type) {
       case "data":
         fs.readFile(path,function(err,data) {
@@ -298,10 +302,13 @@ pageItem={
           } else {
             try {
               data=JSON.parse(data);
-              callback(data,new stat.states.items.OK());
             } catch(e) {
               callback(null,new stat.states.items.INVALID_ITEM_FILE({id:id,type:type,msg:"JSON"}));
             }
+            var evtObj={id:id, type:type, data:data, addData:addData};
+            plugins.trigger("itemData.post",evtObj);
+
+            callback(evtObj.data,new stat.states.items.OK());
           }
         });
         break;
@@ -483,6 +490,8 @@ pageItem={
 (function registerEvents() {
   plugins.registerEvent("itemStr.pre");
   plugins.registerEvent("itemStr.post");
+  plugins.registerEvent("itemData.pre");
+  plugins.registerEvent("itemData.post");
 })();
 
 

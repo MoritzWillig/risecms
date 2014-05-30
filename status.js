@@ -62,7 +62,7 @@ status={
       code:statusCode,
       data:data
     };
-  }
+  },
 };
 
 status.states={ //tree hirachy of status codes
@@ -77,6 +77,13 @@ status.states={ //tree hirachy of status codes
     OK: Status.derive(1000,"OK"),
     DATABASE_ERROR:Status.derive(1001,"An database error ocurred"),
     INVALID_QUERY:Status.derive(1002,"The sent query was invalid")
+  },
+  system:{
+    plugins:{
+      UNKNOWN_EVENT:Status.derive(-1,"The event was not registered"),
+      KNOWN_EVENT  :Status.derive(-2,"The event was already registered"),
+    }
+    
   }
 };
 

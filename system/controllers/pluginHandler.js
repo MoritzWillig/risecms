@@ -1,5 +1,6 @@
 var fsanchor=require("../../fsanchor");
 var express=require("express");
+var stat=require("../../status.js");
 
 /**
  * manages all loaded plugins provides events to system interfaces
@@ -74,7 +75,7 @@ pluginHandler={
    * @return {undefined}
    */
   registerEvent:function(name) {
-    if (this.isRegisteredEvent(name)) { throw {desc:"event was already registered",name:name}; }
+    if (this.isRegisteredEvent(name)) { throw new stat.states.system.plugins.KNOWN_EVENT({name:name}); }
 
     this.eventChains[name]=[];
   },
@@ -85,7 +86,7 @@ pluginHandler={
    * @return {undefined}
    */
   unregisterEvent:function(name) {
-    if (!isRegisteredEvent(name)) { throw {desc:"event was not registered",name:name}; }
+    if (!isRegisteredEvent(name)) { throw new stat.states.system.plugins.UNKNOWN_EVENT({name:name}); }
 
     delete this.eventChains[name];
   },
@@ -97,7 +98,7 @@ pluginHandler={
    * @return {undefined}
    */
   on:function(name,callback) {
-    if (!this.isRegisteredEvent(name)) { throw {desc:"Unknown event",name:name}; }
+    if (!this.isRegisteredEvent(name)) { throw new stat.states.system.plugins.UNKNOWN_EVENT({name:name}); }
 
     var idx=this.eventChains[name].indexOf(callback);
     if (idx==-1) {
@@ -112,7 +113,7 @@ pluginHandler={
    * @return {undefined}
    */
   off:function(name,callback) {
-    if (!this.isRegisteredEvent(name)) { throw {desc:"Unknown event",name:name}; }
+    if (!this.isRegisteredEvent(name)) { throw new stat.states.system.plugins.UNKNOWN_EVENT({name:name}); }
 
     var idx=this.eventChains[name].indexOf(callback);
     if (idx!=-1) {
@@ -126,7 +127,7 @@ pluginHandler={
    * @return {Array} the event chain for name
    */
   getEventChain:function(name) {
-    if (!this.isRegisteredEvent(name)) { throw {desc:"Unknown event",name:name}; }
+    if (!this.isRegisteredEvent(name)) { throw new stat.states.system.plugins.UNKNOWN_EVENT({name:name}); }
 
     return this.eventChains[name];
   },
