@@ -4,19 +4,28 @@ fs=require("fs");
 pageItem=require("../../system/models/pageitem.js");
 
 var sourceTracker={
-  addTrace:function(event,data) {
+  addStrTrace:function(event,data) {
+    console.log(">>",data.addData.data);
+    var dataTag=((data.addData.data)&&(typeof data.addData.data._debugId!="undefined"))?
+      "data-dataId='"+(data.addData.data._debugId)+"'":
+      "";
+    
     data.string=
-      "\n<span class='riseCMSDebug' data-tag='tag'  data-id='"+data.id+"'>\n"
+      "\n<span class='riseCMSDebug' data-tag='tag' data-id='"+data.id+"' "+dataTag+">\n"
       +data.string+
       "\n</span>\n";
     
     //"\n<div class='riseCMSDebug' data-tag='open'  data-id='"+id+"'></div>\n"
     //"\n<div class='riseCMSDebug' data-tag='close' data-id='"+id+"'></div>\n",
+  },
+  addDataTrace:function(event,data) {
+    data.data._debugId=data.id;
   }
 };
 
 function editorInit(pluginHandler) {
-  pluginHandler.on("itemStr.post",sourceTracker.addTrace);
+  pluginHandler.on("itemStr.post",sourceTracker.addStrTrace);
+  pluginHandler.on("itemData.post",sourceTracker.addDataTrace);
   
   pluginHandler.registerRoute("plugins","/editor/:id(\\d+)/get",function(req,res,next) {
     var id=req.params.id;
