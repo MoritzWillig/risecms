@@ -9,7 +9,6 @@ var sourceTracker={
       "data-dataId='"+(data.addData.data._debugId)+"'":
       "";
     
-    console.log(data.addData.header);
     data.string=
       "\n<span class='riseCMSDebug' \
       data-tag='tag' \
