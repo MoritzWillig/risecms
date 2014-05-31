@@ -77,6 +77,8 @@ document.body.ondblclick=function(e,x) {
 
 var editor;
 function openEditor() {
+  $("body").addClass("editorModal");
+
   if (editor) { return; }
   $("body").append($("\
     <div id='editScreenBg'>\
@@ -119,9 +121,9 @@ function openEditor() {
   var srcs=document.getElementById("editScreenSources");
 
   var ids=[];
-  function addId(id) {
+  function addId(id,name) {
     if (ids.indexOf(id)==-1) {
-      var item=$("<div class='editScreenSourceEntry'>"+id+"</div>");
+      var item=$("<div class='editScreenSourceEntry'>"+id+" - "+(name?name:"")+"</div>");
       item.click(function() {
         loadEntry(id);
       });
@@ -131,7 +133,7 @@ function openEditor() {
   }
   for (var i=0; i<nodes.length; i++) {
     var src=nodes[i].dataset;
-    addId(src.id);
+    addId(src.id,src.name);
     if (src.dataid) {
       addId(src.dataid);
     }
@@ -145,6 +147,8 @@ function openEditor() {
 }
 
 function closeEditor(e) {
+  $("body").removeClass("editorModal");
+  
   editor.destroy();
   $("#editScreenBg").remove();
   editor=null;
