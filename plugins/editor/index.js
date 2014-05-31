@@ -9,8 +9,14 @@ var sourceTracker={
       "data-dataId='"+(data.addData.data._debugId)+"'":
       "";
     
+    console.log(data.addData.header);
     data.string=
-      "\n<span class='riseCMSDebug' data-tag='tag' data-id='"+data.id+"' "+dataTag+">\n"
+      "\n<span class='riseCMSDebug' \
+      data-tag='tag' \
+      data-id='"+data.id+"' \
+      data-name='"+data.addData.header.name+"' \
+      data-type='"+data.addData.header.type+"' \
+      "+dataTag+">\n"
       +data.string+
       "\n</span>\n";
     

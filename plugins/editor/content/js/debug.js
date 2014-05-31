@@ -3,6 +3,12 @@ var enclosingTags=true;
 
 function display(str) {
   console.log(str);
+  var x=$("<div id='displayForm'></div>")
+  .text(str)
+  .click(function() {
+    $(x).remove();
+  });
+  $("body").append(x);
 }
 
 function hasClass(element, cls) {
@@ -132,7 +138,9 @@ function openEditor() {
   }
 
   var add=$("<div class='editScreenSourceEntry'>+</div>");
-  add.click(function() { alert("x"); });
+  add.click(function() {
+    loadEntry(undefined);
+  });
   $(srcs).append(add);
 }
 
@@ -156,12 +164,7 @@ function loadEntry(id) {
     //ask save overwrite
   }
   
-  $.getJSON("/plugins/editor/"+id+"/get",function(data,testStatus,jqXHR) {
-    if (data.code!=200) {
-      display("Error "+data.code+" - "+data.descr);
-      return;
-    }
-
+  function setData(id,data) {
     loadedId=id;
 
     for (var name in data.header) {
@@ -172,24 +175,50 @@ function loadEntry(id) {
     switch (data.header.type) {
       case "static":
         editor.getSession().setMode("ace/mode/html");
-        editor.setValue(data.data);
+        editor.setValue(data.data,-1);
         break;
       case "script":
         editor.getSession().setMode("ace/mode/javascript");
-        editor.setValue(data.data);
+        editor.setValue(data.data,-1);
         break;
       case "data":
         editor.getSession().setMode("ace/mode/json");
-        editor.setValue(data.data);
+        editor.setValue(data.data,-1);
         break;
       default:
         display("Unknown type: "+data.header.type);
         break;
     }
     editor.getSession().getUndoManager().markClean();
-  }).fail(function() {
-    display("Error");
-  });
+  }
+
+  if (id!=undefined) {
+    $.getJSON("/plugins/editor/"+id+"/get",function(data,testStatus,jqXHR) {
+      if (data.code!=200) {
+        display("Error "+data.code+" - "+data.descr);
+        return;
+      }
+
+      setData(id,data);
+    }).fail(function() {
+      display("Error");
+    });
+  } else {
+    setData(undefined,{
+      header:{
+        id:undefined,
+        section:undefined,
+        path:undefined,
+        name:undefined,
+        uri_name:undefined,
+        title:undefined,
+        parent:undefined,
+        type:"static",
+        created:undefined
+      },
+      data:""
+    });
+  }
 }
 
 function newItem() {

@@ -329,6 +329,7 @@ pageItem={
   createResult:function(result,err,callback,addData) {
     if (!err) {
       if ((result) && (result[0])) { console.log("loading storage/"+result[0].id);
+        addData.header=result[0];
         if (result[0].type=="data") {
           pageItem.getResourceData(result[0].id,result[0].type,addData,function(data,err) {
             console.log("loading data");

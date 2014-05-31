@@ -85,3 +85,18 @@
 .editScreenSourceEntryActive {
   text-shadow: 0px 0px 5px #8f0,0px 0px 5px #8f0;
 }
+
+#displayForm {
+  background-color:#e00;
+  color:#fff;
+  padding:20px;
+  
+  position:absolute;
+  top:5px;
+  left:calc(20% - 20px);
+  width:60%;
+
+  z-index:100;
+
+  cursor:pointer;
+}
