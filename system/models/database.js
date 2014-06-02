@@ -9,6 +9,8 @@ var connection = mysql.createConnection({ //TODO: create pool
   database : gc.database.pageDb
 });
 
+//TODO: reconnect on connection loss
+
 connection.connect(function(err) {
   if (err) {
     console.error('error connecting: ' + err.stack);

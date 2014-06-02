@@ -10,9 +10,17 @@ fsanchor.set("content","./content/");
 fsanchor.set("plugins","./plugins/");
 
 var express=require('express');
+var express_body=require('body/form');
 
 var app=express();
 
+app.use(function(req,res,next) {
+  express_body(req,function(err,body) {
+    //TODO: use body/any + fail on error
+    req.body=err?{}:body;
+    next();
+  });
+});
 
 /*
  * content, api & plugin routes

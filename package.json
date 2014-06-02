@@ -6,7 +6,8 @@
   "dependencies": {
     "express": "4.1.x",
     "mysql": "2.1.x",
-    "rimraf": "2.2.x"
+    "rimraf": "2.2.x",
+    "body":"4.4.x"
   },
   "engine": "node 0.10.26"
 }

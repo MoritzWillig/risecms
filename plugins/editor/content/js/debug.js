@@ -1,14 +1,22 @@
 
 var enclosingTags=true;
 
+var displayForm;
 function display(str) {
   console.log(str);
-  var x=$("<div id='displayForm'></div>")
-  .text(str)
-  .click(function() {
-    $(x).remove();
-  });
-  $("body").append(x);
+
+  if (!displayForm) {
+    displayForm=$("<div id='displayForm'></div>")
+    .click(function() {
+      $(displayForm).remove();
+      displayForm=undefined;
+    });
+    $("body").append(displayForm);
+  } else {
+    displayForm.append("<hr>");
+  }
+
+  displayForm.append(str);
 }
 
 function hasClass(element, cls) {
@@ -88,8 +96,8 @@ function openEditor() {
         </div>\
         <div id='editScreenSources'></div>\
         <div id='editScreenHeader'>\
-          <button>save header</button>\
-          <input class='editScreenHead' id='editScreenHead_id'>\
+          <button onclick='saveCurrent(false,true)'>save header</button>\
+          <input class='editScreenHead' id='editScreenHead_id' enabled='false'>\
           <input class='editScreenHead' id='editScreenHead_section'>\
           <input class='editScreenHead' id='editScreenHead_path'>\
           <input class='editScreenHead' id='editScreenHead_name'>\
@@ -97,12 +105,12 @@ function openEditor() {
           <input class='editScreenHead' id='editScreenHead_title'>\
           <input class='editScreenHead' id='editScreenHead_parent'>\
           <input class='editScreenHead' id='editScreenHead_type'>\
-          <input class='editScreenHead' id='editScreenHead_created'>\
+          <input class='editScreenHead' id='editScreenHead_created' enabled='false'>\
         </div>\
         <div id='editScreen'></div>\
         <div id='editScreenFooter'>\
-          <button>save content</button>\
-          <button>save all</button>\
+          <button onclick='saveCurrent(true,false)'>save content</button>\
+          <button onclick='saveCurrent()'>save all</button>\
         </div>\
       </div>\
     </div>\
@@ -121,14 +129,29 @@ function openEditor() {
   var srcs=document.getElementById("editScreenSources");
 
   var ids=[];
+  var idSE=[];
+  var lastInsertSE;
   function addId(id,name) {
-    if (ids.indexOf(id)==-1) {
-      var item=$("<div class='editScreenSourceEntry'>"+id+" - "+(name?name:"")+"</div>");
+    var idx=ids.indexOf(id);
+    if (idx==-1) {
+      var item=$("<div class='editScreenSourceEntry'>"+id+(name?" - "+name:"")+"</div>");
       item.click(function() {
         loadEntry(id);
       });
-      $(srcs).append(item);
+
+      if (!lastInsertSE) {
+        $(srcs).append(item);
+      } else {
+        $(item).insertAfter(lastInsertSE);
+      }
+      lastInsertSE=item;
+      
       ids.push(id);
+      idSE.push(item);
+
+      return item;
+    } else {
+      return idSE[idx];
     }
   }
   for (var i=0; i<nodes.length; i++) {
@@ -138,6 +161,17 @@ function openEditor() {
       addId(src.dataid);
     }
   }
+  
+  var load=$("<div class='editScreenSourceEntry'>\
+    <input></input>\
+    <button>load</button>\
+  </div>");
+  $(load.children()[1]).click(function() {
+    var id=$(load.children()[0]).val();
+    var item=addId(id);
+    $(item).click();
+  });
+  $(srcs).append(load);
 
   var add=$("<div class='editScreenSourceEntry'>+</div>");
   add.click(function() {
@@ -176,36 +210,48 @@ function loadEntry(id) {
     }
 
     //editor set content
-    switch (data.header.type) {
-      case "static":
-        editor.getSession().setMode("ace/mode/html");
-        editor.setValue(data.data,-1);
-        break;
-      case "script":
-        editor.getSession().setMode("ace/mode/javascript");
-        editor.setValue(data.data,-1);
-        break;
-      case "data":
-        editor.getSession().setMode("ace/mode/json");
-        editor.setValue(data.data,-1);
-        break;
-      default:
-        display("Unknown type: "+data.header.type);
-        break;
+    if (data.data==undefined) {
+      editor.setValue("no data",-1);
+      editor.setReadOnly(true);
+    } else {
+      editor.setReadOnly(false);
+      switch (data.header.type) {
+        case "static":
+          editor.getSession().setMode("ace/mode/html");
+          editor.setValue(data.data,-1);
+          break;
+        case "script":
+          editor.getSession().setMode("ace/mode/javascript");
+          editor.setValue(data.data,-1);
+          break;
+        case "data":
+          editor.getSession().setMode("ace/mode/json");
+          editor.setValue(data.data,-1);
+          break;
+        default:
+          display("Unknown type: "+data.header.type);
+          break;
+      }
     }
     editor.getSession().getUndoManager().markClean();
   }
 
   if (id!=undefined) {
-    $.getJSON("/plugins/editor/"+id+"/get",function(data,testStatus,jqXHR) {
-      if (data.code!=200) {
-        display("Error "+data.code+" - "+data.descr);
-        return;
-      }
+    $.ajax("/plugins/editor/"+id+"/get",{
+      type:"GET",
+      dataType:"json",
+      cache:false,
+      success:function(data,testStatus,jqXHR) {
+        if (data.code!=200) {
+          display("Error "+data.code+" - "+data.descr);
+          return;
+        }
 
-      setData(id,data);
-    }).fail(function() {
-      display("Error");
+        setData(id,data);
+      },
+      error:function() {
+        display("Can not connect to server");
+      }
     });
   } else {
     setData(undefined,{
@@ -225,13 +271,74 @@ function loadEntry(id) {
   }
 }
 
-function newItem() {
+function saveCurrent(excludeHeader,excludeData) {
+  var header=undefined;
+  if (!excludeHeader) {
+    header=readHeader();
+    delete header.id;
+  }
+  var content=excludeData?undefined:readContent();
+    
+  if (loadedId==undefined) {
+    saveNewItem(header,content);
+  } else {
+    saveItem(loadedId,header,content);
+  }
 }
 
-function saveHeader(id,data) {
+headerFields=["id","section","path","name","uri_name","title","parent","type","created"];
 
+function readHeader() {
+  var header={};
+  for (var name in headerFields) {
+    header[headerFields[name]]=$("#editScreenHead_"+headerFields[name]).val();
+  }
+  return header;
 }
 
-function saveContent(id,data) {
+function readContent() {
+  var val=editor.getValue();
+  return (editor.getReadOnly())?undefined:val;
+}
 
+function saveItem(id,header,data) {
+  $.ajax("plugins/editor/"+id+"/set",{
+    type:"POST",
+    dataType:"json",
+    data:{
+      header:(typeof header=="undefined")?undefined:JSON.stringify(header),
+      data:  data
+    },
+    success:function(data,testStatus,jqXHR) {
+      if (data.code==200) {
+        display("ok");
+      } else {
+        display("could not save item");
+      }
+    },
+    error:function() {
+      display("Can not connect to server");
+    }
+  });
+}
+
+function saveNewItem(header, data) {
+  $.ajax("plugins/editor/new",{
+    type:"POST",
+    dataType:"json",
+    data:{
+      header:(typeof header=="undefined")?undefined:JSON.stringify(header),
+      data:  data
+    },
+    success:function(data,testStatus,jqXHR) {
+      if (data.code==200) {
+        display("ok");
+      } else {
+        display("could not save item");
+      }
+    },
+    error:function() {
+      display("can not connect to server");
+    }
+  });
 }

@@ -36,6 +36,7 @@ function editorInit(pluginHandler) {
     var path=resolveId(id);
 
     fs.readFile(path,function(err,data) {
+      //TODO: check for real error or if file does not exist
       data=(!err)?data.toString():undefined;
 
       pageItem.getHeader(id,function(err,header) {
@@ -54,19 +55,21 @@ function editorInit(pluginHandler) {
   });
   pluginHandler.registerRoute("plugins","/editor/:id(\\d+)/set",function(req,res,next) {
     var id=req.params.id;
-    var postData=req.query?req.query:{};//req.body?req.body:{};
+    var postData=paramObj(req);
     var data =postData.data;
     var header;
-    try {
-      header=JSON.parse(postData.header);
-    } catch(e) {
-      var resObj={
-        code:404,
-        desc:"invalid json for item header",
-        err:e.toString()
-      };
-      res.send(resObj);
-      return;
+    if (postData.header!=undefined) {
+      try {
+        header=JSON.parse(postData.header);
+      } catch(e) {
+        var resObj={
+          code:404,
+          desc:"invalid json for item header",
+          err:e.toString()
+        };
+        res.send(resObj);
+        return;
+      }
     }
 
     updateId(id,data,header,res);
@@ -95,6 +98,7 @@ function editorInit(pluginHandler) {
         var resObj={
           code:failed?404:200,
           desc:failed?"could not save header":"ok",
+          id:id,
           err:failed?err:undefined
         }
         res.send(resObj);
@@ -105,6 +109,7 @@ function editorInit(pluginHandler) {
       var resObj={
         code:200,
         desc:"ok",
+        id:id,
         info:"no action was requested"
       }
       res.send(resObj);
@@ -112,19 +117,21 @@ function editorInit(pluginHandler) {
   }
 
   pluginHandler.registerRoute("plugins","/editor/new",function(req,res,next) {
-    var postData=req.query?req.query:{};//req.body?req.body:{};
+    var postData=paramObj(req);
     var data =postData.data;
-    var header;
-    try {
-      header=JSON.parse(postData.header);
-    } catch(e) {
-      var resObj={
-        code:404,
-        desc:"invalid json for item header",
-        err:e.toString()
-      };
-      res.send(resObj);
-      return;
+    var header=undefined;
+    if (postData.header!=undefined) {
+      try {
+        header=JSON.parse(postData.header);
+      } catch(e) {
+        var resObj={
+          code:404,
+          desc:"invalid json for item header",
+          err:e.toString()
+        };
+        res.send(resObj);
+        return;
+      }
     }
     
     //create entry
@@ -148,6 +155,10 @@ function editorInit(pluginHandler) {
   pluginHandler.registerRoute("plugins","/editor/",function(req,res,next) {
     res.send("{code:404,error:'invalid url'}");
   })
+}
+
+function paramObj(req) {
+  return (req.body.header||req.body.data)?req.body:req.query;
 }
 
 function resolveId(id) {

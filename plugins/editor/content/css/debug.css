@@ -86,6 +86,14 @@
   text-shadow: 0px 0px 5px #8f0,0px 0px 5px #8f0;
 }
 
+.editScreenSourceEntry input {
+  width:75%;
+}
+
+.editScreenSourceEntry button {
+  width:20%;
+}
+
 #displayForm {
   background-color:#e00;
   color:#fff;
