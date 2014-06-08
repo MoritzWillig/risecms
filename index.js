@@ -51,7 +51,9 @@ app.use(express_session({
 
 app.use(function(req,res,next) {
   var session=req.session;
-  req.user=new user(session.user?session.user.id:undefined,function(user) {
+  new user(session.user?session.user:undefined,function(user) {
+    req.user=user;
+    //console.log(user.status.toString());
     next();
   });
 });

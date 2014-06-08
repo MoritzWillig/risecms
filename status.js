@@ -92,7 +92,8 @@ status.states={ //tree hirachy of status codes
   },
   users:{
     IS_USER:status.proto.users.derive(-100,"The element is a user"),
-    NO_USER:status.proto.users.derive(-101,"The element is no user")
+    NO_USER:status.proto.users.derive(-101,"The element is no user"),
+    NOT_AUTHENTICATED:status.proto.users.derive(-102,"The user was not authenicated")
   }
 };
 

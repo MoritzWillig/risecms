@@ -2,6 +2,8 @@ var fsanchor=require("../../fsanchor");
 var express=require("express");
 var stat=require("../../status.js");
 
+//TODO: pass object to plugins to register routes in specific plugin folder (e.g. Router=>plugins/name/...)
+
 /**
  * manages all loaded plugins provides events to system interfaces
  * @type {Object}
