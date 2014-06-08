@@ -24,10 +24,11 @@ Status.prototype={
  * creates a new status class
 **/
 Status.derive=function(code,statusName) {
-  if (status.codes[code]) {
+  if ((code==undefined) && (status.codes[code])) {
     throw "Status code "+code+" was already assigned to an status";
   } else {
     function derivedStatus(info) { this.info=info; }
+    derivedStatus.derive=Status.derive;
     derivedStatus.prototype = new Status(code,statusName);
 
     status.codes[code]=derivedStatus;
@@ -65,6 +66,11 @@ status={
   },
 };
 
+status.proto={
+  users:Status.derive(undefined,"users proto"),
+
+};
+
 status.states={ //tree hirachy of status codes
   items:{
     OK: Status.derive(200,"OK"),
@@ -83,7 +89,10 @@ status.states={ //tree hirachy of status codes
       UNKNOWN_EVENT:Status.derive(-1,"The event was not registered"),
       KNOWN_EVENT  :Status.derive(-2,"The event was already registered"),
     }
-    
+  },
+  users:{
+    IS_USER:status.proto.users.derive(-100,"The element is a user"),
+    NO_USER:status.proto.users.derive(-101,"The element is no user")
   }
 };
 

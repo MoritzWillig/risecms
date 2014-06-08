@@ -1,6 +1,7 @@
 //load configuration
 var cg=require('./config.js');
 var item=require("./system/models/pageitem.js");
+var user=require("./system/models/user.js");
 var plugins=require("./system/controllers/pluginHandler.js");
 var stat=require("./status.js");
 var fsanchor=require("./fsanchor.js");
@@ -11,13 +12,46 @@ fsanchor.set("plugins","./plugins/");
 
 var express=require('express');
 var express_body=require('body/form');
+var cookie_parser=require('cookie-parser');
+var express_session=require('express-session');
+var redis=require('redis');
+var session_redis=require('connect-redis')(express_session);
 
 var app=express();
 
+/**
+ * session parsing
+ */
 app.use(function(req,res,next) {
   express_body(req,function(err,body) {
     //TODO: use body/any + fail on error
     req.body=err?{}:body;
+    next();
+  });
+});
+
+app.use(cookie_parser(cg.session.redis.secret));
+
+app.use(express_session({
+  store: new session_redis({
+    //client: redis.createClient(),
+    host: cg.session.redis.host,
+    port: cg.session.redis.port,
+    ttl: cg.session.redis.ttl,
+    db: cg.session.redis.db,
+    pass: cg.session.redis.pass,
+    prefix: cg.session.redis.prefix,
+  }),
+  secret:cg.session.redis.secret,
+  rolling:true,
+  cookie: {
+    maxAge:cg.session.redis.ttl
+  }
+}));
+
+app.use(function(req,res,next) {
+  var session=req.session;
+  req.user=new user(session.user?session.user.id:undefined,function(user) {
     next();
   });
 });
