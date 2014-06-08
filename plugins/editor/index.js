@@ -2,6 +2,7 @@
 fsanchor=require("../../fsanchor.js");
 fs=require("fs");
 pageItem=require("../../system/models/pageitem.js");
+cg=require("../../config.js");
 
 var sourceTracker={
   addStrTrace:function(event,data) {
@@ -31,6 +32,21 @@ function editorInit(pluginHandler) {
   pluginHandler.on("itemStr.post",sourceTracker.addStrTrace);
   pluginHandler.on("itemData.post",sourceTracker.addDataTrace);
   
+  pluginHandler.registerRoute("plugins","/editor/",function(req,res,next) {
+    for (var i in cg.plugins.editor.users) {
+      if (req.user.is(cg.plugins.editor.users[i])) {
+        next();
+        return;
+      }
+    }
+    
+    //not authenticated
+    res.send({
+      code:403,
+      desc:"permission denied",
+    });
+  });
+
   pluginHandler.registerRoute("plugins","/editor/:id(\\d+)/get",function(req,res,next) {
     var id=req.params.id;
     var path=resolveId(id);

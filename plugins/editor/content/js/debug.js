@@ -243,7 +243,7 @@ function loadEntry(id) {
       cache:false,
       success:function(data,testStatus,jqXHR) {
         if (data.code!=200) {
-          display("Error "+data.code+" - "+data.descr);
+          display("Error "+data.code+" - "+data.desc);
           return;
         }
 
