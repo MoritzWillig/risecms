@@ -33,7 +33,7 @@ user.prototype.loadByName=function(name,callback) {
     WHERE\
       ??.name=?\
     GROUP BY\
-      users.name;\
+      ??.name;\
     ",[
     cg.database.usersTable,
     cg.database.groupsTable,
