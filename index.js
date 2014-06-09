@@ -45,7 +45,7 @@ app.use(express_session({
   secret:cg.session.redis.secret,
   rolling:true,
   cookie: {
-    maxAge:cg.session.redis.ttl
+    maxAge:cg.session.redis.ttl*1000
   }
 }));
 
