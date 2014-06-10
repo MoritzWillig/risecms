@@ -59,6 +59,15 @@ app.use(function(req,res,next) {
 });
 
 /*
+ * trigger request event
+ */
+app.use(function(req,res,next) {
+  var evtObj={req:req,res:res};
+  plugins.trigger("request.pre",evtObj);
+  next();
+});
+
+/*
  * content, api & plugin routes
  */
 contentRouter=express.Router();
@@ -86,9 +95,16 @@ plugins.setup(app,{
  * CMS routing
  */
 app.use('/', function(req, res) {
+  var evtObj={req:req,res:res};
+  plugins.trigger("page.pre",evtObj);
+          
+
   item.loadByPath(req.url,function(page,error) {
     var httpRes=stat.toHTTP(page,error);
-    res.send(httpRes.code,httpRes.data);
+
+    var evtObj={req:req,res:res,httpRes:httpRes};
+    plugins.trigger("page.post",evtObj);
+    res.send(evtObj.httpRes.code,evtObj.httpRes.data);
   },{
     global:{
       host:"http://"+cg.http.host+((cg.http.port==80)?"":(":"+cg.http.port)),
@@ -105,6 +121,28 @@ app.use(function(err,req,res) {
 var server = app.listen(cg.http.port, cg.http.host, function() {
   console.log('Listening on port %d', server.address().port);
 });
+
+(function registerEvents() {
+  /**
+   * @event page.pre
+   * @param {Request} req http request
+   * @param {Response} res http response
+   */
+  plugins.registerEvent("page.pre");
+  /**
+   * @event page.post
+   * @param {Request} req http request
+   * @param {Response} res http response
+   * @param {HttpRes} httpRes result to be send
+   */
+  plugins.registerEvent("page.post");
+  /**
+   * @event request.pre
+   * @param {Request} req http request
+   * @param {Response} res http response
+   */
+  plugins.registerEvent("request.pre");
+})();
 
 for (var i in cg.system.plugins) {
   console.log("loading plugin",cg.system.plugins[i]);
