@@ -5,7 +5,30 @@ pageItem=require("../../system/models/pageitem.js");
 cg=require("../../config.js");
 
 var sourceTracker={
+  insertDebugScript:function(event,data) {
+    var user=data.req.user;
+    if (!checkRights(user)) { return; }
+
+    if (data.httpRes.code!=200) {
+      //add code for new page
+    }
+
+    var debSrcTag='<script src="'+data.global.host+'/content/plugins/editor/js/debug.js"></script>';
+    var debCssTag='<link rel="stylesheet" type="text/css" href="'+data.global.host+'/content/plugins/editor/css/debug.css">';
+    var debEdtTag='<script src="'+data.global.host+'/content/plugins/editor/js/libs/ace-builds/src-noconflict/ace.js"></script>';
+    var debTag=debEdtTag+"\n"+debSrcTag+"\n"+debCssTag+"\n";
+    //find head tag
+    var res=data.httpRes.data.replace(/<\/head>/i,debTag+"</head>");
+    if (res.length!=data.httpRes.data) {
+      //no header found, append script to end
+      res+=debSrcTag;
+    }
+    data.httpRes.data=res;
+  },
   addStrTrace:function(event,data) {
+    var user=data.addData.global.req.user;
+    if (!checkRights(user)) { return; }
+
     var dataTag=((data.addData.data)&&(typeof data.addData.data._debugId!="undefined"))?
       "data-dataId='"+(data.addData.data._debugId)+"'":
       "";
@@ -24,20 +47,32 @@ var sourceTracker={
     //"\n<div class='riseCMSDebug' data-tag='close' data-id='"+id+"'></div>\n",
   },
   addDataTrace:function(event,data) {
+    var user=data.addData.global.req.user;
+    if (!checkRights(user)) { return; }
+
     data.data._debugId=data.id;
   }
 };
 
+function checkRights(user) {
+  for (var i in cg.plugins.editor.users) {
+    if (user.is(cg.plugins.editor.users[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function editorInit(pluginHandler) {
+  pluginHandler.on("page.post",sourceTracker.insertDebugScript);
+
   pluginHandler.on("itemStr.post",sourceTracker.addStrTrace);
   pluginHandler.on("itemData.post",sourceTracker.addDataTrace);
   
   pluginHandler.registerRoute("plugins","/editor/",function(req,res,next) {
-    for (var i in cg.plugins.editor.users) {
-      if (req.user.is(cg.plugins.editor.users[i])) {
-        next();
-        return;
-      }
+    if (checkRights(req.user)) {
+      next();
+      return;
     }
     
     //not authenticated
