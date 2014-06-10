@@ -95,21 +95,24 @@ plugins.setup(app,{
  * CMS routing
  */
 app.use('/', function(req, res) {
-  var evtObj={req:req,res:res};
+  var global={
+    host:"http://"+cg.http.host+((cg.http.port==80)?"":(":"+cg.http.port)),
+    title:"Test",
+    req:req,
+    res:res
+  };
+
+  var evtObj={req:req,res:res,global:global};
   plugins.trigger("page.pre",evtObj);
-          
 
   item.loadByPath(req.url,function(page,error) {
     var httpRes=stat.toHTTP(page,error);
 
-    var evtObj={req:req,res:res,httpRes:httpRes};
+    var evtObj={req:req,res:res,httpRes:httpRes,global:global};
     plugins.trigger("page.post",evtObj);
     res.send(evtObj.httpRes.code,evtObj.httpRes.data);
   },{
-    global:{
-      host:"http://"+cg.http.host+((cg.http.port==80)?"":(":"+cg.http.port)),
-      title:"Test"
-    }
+    global:global
   });
 });
 
@@ -127,6 +130,7 @@ var server = app.listen(cg.http.port, cg.http.host, function() {
    * @event page.pre
    * @param {Request} req http request
    * @param {Response} res http response
+   * @param {Object} global global param object
    */
   plugins.registerEvent("page.pre");
   /**
@@ -134,6 +138,7 @@ var server = app.listen(cg.http.port, cg.http.host, function() {
    * @param {Request} req http request
    * @param {Response} res http response
    * @param {HttpRes} httpRes result to be send
+   * @param {Object} global global param object
    */
   plugins.registerEvent("page.post");
   /**
