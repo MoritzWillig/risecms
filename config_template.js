@@ -22,7 +22,7 @@ config={
       db:0,
       pass:undefined,
       prefix:"session_",
-      secret:"984d8kz8ddnlsd"
+      secret:"%session.secret%"
     }
   },
   system:{
