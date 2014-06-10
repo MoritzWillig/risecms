@@ -95,17 +95,33 @@ function openEditor() {
           <div id='editScreenClose' onclick='closeEditor()'>x</div>\
         </div>\
         <div id='editScreenSources'></div>\
-        <div id='editScreenHeader'>\
-          <button onclick='saveCurrent(false,true)'>save header</button>\
-          <input class='editScreenHead' id='editScreenHead_id' enabled='false'>\
-          <input class='editScreenHead' id='editScreenHead_section'>\
-          <input class='editScreenHead' id='editScreenHead_path'>\
-          <input class='editScreenHead' id='editScreenHead_name'>\
-          <input class='editScreenHead' id='editScreenHead_uri_name'>\
-          <input class='editScreenHead' id='editScreenHead_title'>\
-          <input class='editScreenHead' id='editScreenHead_parent'>\
-          <input class='editScreenHead' id='editScreenHead_type'>\
-          <input class='editScreenHead' id='editScreenHead_created' enabled='false'>\
+        <div id='editScreenHeaderWrapper'>\
+          <table id='editScreenHeader'>\
+            <tr id='editSCreenTitleDesc'>\
+              <td></td>\
+              <td>id</td>\
+              <td>section</td>\
+              <td>path</td>\
+              <td>name</td>\
+              <td>uri_name</td>\
+              <td>title</td>\
+              <td>parent</td>\
+              <td>type</td>\
+              <td>created</td>\
+            </tr>\
+            <tr>\
+              <td><button onclick='saveCurrent(false,true)'>save header</button></td>\
+              <td><input class='editScreenHead' id='editScreenHead_id' enabled='false'></td>\
+              <td><input class='editScreenHead' id='editScreenHead_section'></td>\
+              <td><input class='editScreenHead' id='editScreenHead_path'></td>\
+              <td><input class='editScreenHead' id='editScreenHead_name'></td>\
+              <td><input class='editScreenHead' id='editScreenHead_uri_name'></td>\
+              <td><input class='editScreenHead' id='editScreenHead_title'></td>\
+              <td><input class='editScreenHead' id='editScreenHead_parent'></td>\
+              <td><input class='editScreenHead' id='editScreenHead_type'></td>\
+              <td><input class='editScreenHead' id='editScreenHead_created' enabled='false'></td>\
+            </tr>\
+          </table>\
         </div>\
         <div id='editScreen'></div>\
         <div id='editScreenFooter'>\

@@ -1,6 +1,6 @@
 
 #editScreenBg { 
-  position:absolute;
+  position:fixed;
   top:0px;
   left:0px;
   width:100%;
@@ -10,7 +10,7 @@
 #editScreenWindow {
   background-color:#ddd;
   border:1px solid #f80;
-  position:absolute;
+  position:fixed;
   top:3%;
   left:2%;
   width:96%;
@@ -34,14 +34,32 @@
 }
 
 
-#editScreenHeader {
-  height:44px;
+#editScreenHeaderWrapper {
+  white-space: nowrap;
+  overflow-y:hidden;
+  overflow-x:scroll;
+  height:79px;
   background-color: #111;
   border-bottom: 1px solid #000;
+}
+
+#editScreenHeader {
+  height:44px;
 
   white-space: nowrap;
   overflow-y:hidden;
   overflow-x:scroll;
+  width:100%;
+}
+
+#editScreenHeader tr, #editScreenHeader td {
+  margin:0px;
+  padding:0px;
+}
+
+#editScreenTitleDesc {
+  height:22px;
+  color:#fff;
 }
 
 .editScreenHead {
@@ -49,7 +67,7 @@
 }
 
 #editScreen { 
-  height:calc(100% - 90px);
+  height:calc(100% - 125px); /* 100% - 25px - 80px -20px  footer-header-titlebar*/
   font-size:12pt;
 }
 
