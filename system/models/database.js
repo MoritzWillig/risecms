@@ -1,7 +1,9 @@
 var gc         = require('../../config.js');
 var mysql      = require('mysql');
 
-var connection = mysql.createConnection({ //TODO: create pool
+var pool = mysql.createPool({
+  connectionLimit:10,
+  queueLimit:0, //no limit to request queue 
   host     : gc.database.host,
   port     : 3306,
   user     : gc.database.user,
@@ -9,9 +11,8 @@ var connection = mysql.createConnection({ //TODO: create pool
   database : gc.database.pageDb
 });
 
-//TODO: reconnect on connection loss
-
-connection.connect(function(err) {
+/*
+pool.connect(function(err) {
   if (err) {
     console.error('error connecting: ' + err.stack);
     return;
@@ -19,10 +20,11 @@ connection.connect(function(err) {
 
   console.log('connected to database');
 });
+*/
 
 database={
   getInstance:function() {
-    return connection;
+    return pool;
   }
 };
 
