@@ -7,7 +7,7 @@ var stat=require("./status.js");
 var fsanchor=require("./fsanchor.js");
 
 fsanchor.set("storage","./storage/");
-fsanchor.set("content","./content/");
+fsanchor.set("content","./public/content/");
 fsanchor.set("plugins","./plugins/");
 
 var express=require('express');

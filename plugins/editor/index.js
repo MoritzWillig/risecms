@@ -3,6 +3,7 @@ fsanchor=require("../../fsanchor.js");
 fs=require("fs");
 pageItem=require("../../system/models/pageitem.js");
 cg=require("../../config.js");
+rdrec=require("../../modules/readDirRecursive");
 
 var sourceTracker={
   insertDebugScript:function(event,data) {
@@ -203,9 +204,91 @@ function editorInit(pluginHandler) {
     });
   });
 
+  pluginHandler.registerRoute("plugins","/editor/content/list",function(req,res,next) {
+    var path=fsanchor.resolve("","content");
+    rdrec(path,function(err,files) {
+      if (err) {
+        res.send({
+          code:404,
+          err:err
+        });
+        return;
+      }
+      
+      res.send({
+        code:200,
+        dir:files
+      });
+    });
+  });
+
+  pluginHandler.registerRoute("plugins","/editor/content/get/:path(**)",function(req,res,next) {
+    var path=req.params.path;
+    var nPath=fsanchor.resolve(path,"content");
+    var cont=fsanchor.resolve("","content");
+
+    //check path is under content
+    if (nPath.substr(0,cont.length)===cont) {
+      fs.readFile(nPath,function(err,data) {
+        if (err) {
+          res.send({
+            code:403,
+            err:err,
+            path:path
+          });
+          return;
+        }
+
+        res.send({
+          code:200,
+          path:path,
+          data:data.toString()
+        });
+      });
+    } else {
+      res.send({
+        code:403,
+        descr:"invalid directory"
+      });
+    }
+  });
+
+  pluginHandler.registerRoute("plugins","/editor/content/set/:path(**)",function(req,res,next) {
+    var path=req.params.path;
+    var nPath=fsanchor.resolve(path,"content");
+    var cont=fsanchor.resolve("","content");
+
+    var postData=paramObj(req);
+    var data =postData.data;
+
+    //check path is under content
+    if (nPath.substr(0,cont.length)===cont) {
+      fs.writeFile(nPath,data,function(err) {
+        if (err) {
+          res.send({
+            code:403,
+            err:err,
+            path:path
+          });
+          return;
+        }
+        
+        res.send({
+          code:200,
+          path:path
+        });
+      });
+    } else {
+      res.send({
+        code:403,
+        descr:"invalid directory"
+      });
+    }
+  });
+
   pluginHandler.registerRoute("plugins","/editor/",function(req,res,next) {
     res.send("{code:404,error:'invalid url'}");
-  })
+  });
 }
 
 function paramObj(req) {

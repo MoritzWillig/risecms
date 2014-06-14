@@ -94,7 +94,10 @@ function openEditor() {
         <div id='editScreenTitlebar'>\
           <div id='editScreenClose' onclick='closeEditor()'>x</div>\
         </div>\
-        <div id='editScreenSources'></div>\
+        <div id='editScreenSources'>\
+          <div id='ess'></div>\
+          <div id='esc'></div>\
+        </div>\
         <div id='editScreenHeaderWrapper'>\
           <table id='editScreenHeader'>\
             <tr id='editSCreenTitleDesc'>\
@@ -142,7 +145,7 @@ function openEditor() {
   editor.setValue("");
 
   var nodes=document.getElementsByClassName("riseCMSDebug");
-  var srcs=document.getElementById("editScreenSources");
+  var srcs=document.getElementById("ess");
 
   var ids=[];
   var idSE=[];
@@ -194,6 +197,61 @@ function openEditor() {
     loadEntry(undefined);
   });
   $(srcs).append(add);
+
+
+  var srcc=document.getElementById("esc");
+  $.ajax("/plugins/editor/content/list",{
+    type:"GET",
+    dataType:"json",
+    cache:false,
+    success:function(data,testStatus,jqXHR) {
+      if (data.code!=200) {
+        display("Error "+data.code+" - "+data.desc);
+        return;
+      }
+      //$(srcc).text(JSON.stringify(data.dir));
+      //fill content
+      for (var d in data.dir) {
+        var n=data.dir[d];
+        if (n=="file") {
+          addContFile(d,srcc,d);
+        } else {
+          addContNode(d,srcc,d,n);
+        }
+      }
+    },
+    error:function() {
+      display("Can not connect to server");
+    }
+  });
+}
+
+function addContNode(name,parent,path,dir) {
+  var node=$("\
+    <div class='srcContNode'>\
+      <div class='scrContEl srcContNodeName'></div>\
+      <div class='srcContNodeSub'></div>\
+    </div>");
+  $(".srcContNodeName",node).text(name);
+  var sub=$(".srcContNodeSub",node);
+
+  for (var d in dir) {
+    var n=dir[d];
+    if (n=="file") {
+      addContFile(d,sub,path+"/"+d);
+    } else {
+      addContNode(d,sub,path+"/"+d,n);
+    }
+  }
+  $(parent).append(node);
+}
+
+function addContFile(name,parent,path) {
+  var node=$("<div class='scrContEl srcContFile'></div>").text(name);
+  node.click(function() {
+    loadEntry(path,true);
+  });
+  $(parent).append(node);
 }
 
 function closeEditor(e) {
@@ -205,21 +263,23 @@ function closeEditor(e) {
 }
 
 var loadedId=-1;
+var fromContent=false;
 
 var changedHeaderValue=false;
 function isEditorClean() {
   return ((editor.getSession().getUndoManager().isClean()) && (!changedHeaderValue));
 }
 
-function loadEntry(id) {
+function loadEntry(id,idFromContent) {
   openEditor();
 
   if (!isEditorClean()) {
     //ask save overwrite
   }
   
-  function setData(id,data) {
+  function setData(id,data,idFromContent) {
     loadedId=id;
+    fromContent=idFromContent?true:false;
 
     for (var name in data.header) {
       $("#editScreenHead_"+name).val(data.header[name]);
@@ -252,7 +312,7 @@ function loadEntry(id) {
     editor.getSession().getUndoManager().markClean();
   }
 
-  if (id!=undefined) {
+  if ((id!=undefined) && (!idFromContent)) {
     $.ajax("/plugins/editor/"+id+"/get",{
       type:"GET",
       dataType:"json",
@@ -270,7 +330,36 @@ function loadEntry(id) {
       }
     });
   } else {
-    setData(undefined,{
+    if (idFromContent) {
+      $.ajax("/plugins/editor/content/get/"+id,{
+        type:"GET",
+        dataType:"json",
+        cache:false,
+        success:function(data,testStatus,jqXHR) {
+          if (data.code!=200) {
+            display("Error "+data.code+" - "+data.desc);
+            return;
+          }
+
+          data.header={
+            id:undefined,
+            section:undefined,
+            path:undefined,
+            name:undefined,
+            uri_name:undefined,
+            title:undefined,
+            parent:undefined,
+            type:"static",
+            created:undefined
+          };
+          setData(id,data,true);
+        },
+        error:function() {
+          display("Can not connect to server");
+        }
+      });
+    } else {
+      setData(undefined,{
       header:{
         id:undefined,
         section:undefined,
@@ -284,21 +373,30 @@ function loadEntry(id) {
       },
       data:""
     });
+    }
   }
 }
 
 function saveCurrent(excludeHeader,excludeData) {
-  var header=undefined;
-  if (!excludeHeader) {
-    header=readHeader();
-    delete header.id;
-  }
-  var content=excludeData?undefined:readContent();
-    
-  if (loadedId==undefined) {
-    saveNewItem(header,content);
+  if (fromContent) {
+    if ((excludeHeader) || (excludeData)) {
+      throw new Error("header and file data can not be excluded in content data");
+    }
+
+    saveContent(loadedId,readContent());
   } else {
-    saveItem(loadedId,header,content);
+    var header=undefined;
+    if (!excludeHeader) {
+      header=readHeader();
+      delete header.id;
+    }
+    var content=excludeData?undefined:readContent();
+      
+    if (loadedId==undefined) {
+      saveNewItem(header,content);
+    } else {
+      saveItem(loadedId,header,content);
+    }
   }
 }
 
@@ -355,6 +453,26 @@ function saveNewItem(header, data) {
     },
     error:function() {
       display("can not connect to server");
+    }
+  });
+}
+
+function saveContent(id,data) {
+  $.ajax("plugins/editor/content/set/"+id,{
+    type:"POST",
+    dataType:"json",
+    data:{
+      data:  data
+    },
+    success:function(data,testStatus,jqXHR) {
+      if (data.code==200) {
+        display("ok");
+      } else {
+        display("could not save content");
+      }
+    },
+    error:function() {
+      display("Can not connect to server");
     }
   });
 }

@@ -25,9 +25,22 @@
 
 #editScreenSources {
   height:calc(100% - 20px);
-  width:200px;
+  width:250px;
   float:left;
+
   background-color: #000;
+  color:#ccc;
+}
+
+#ess {
+  height:50%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+#esc {
+  height:calc(50% - 1px);
+  border-top:1px solid white;
 
   overflow-y: auto;
   overflow-x: hidden;
@@ -88,9 +101,7 @@
 }
 
 .editScreenSourceEntry {
-  background-color:#000;
   padding:5px;
-  color:#aaa;
   font-weight: bold;
   border-bottom:1px solid #222;
   cursor:pointer;
@@ -129,4 +140,27 @@
 
 .editorModal {
   overflow:hidden;
+}
+
+
+.srcContNode {
+
+}
+
+.srcContNodeSub {
+  padding-left:10px;
+}
+
+.srcContNodeTitle {
+
+}
+
+.srcContFile {
+  cursor:pointer;
+  font-weight: bold;
+}
+
+.scrContEl {
+  height:25px;
+
 }
