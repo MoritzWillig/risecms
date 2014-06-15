@@ -19,7 +19,7 @@ var sourceTracker={
     }
     debCrNew="<script>"+debCrNew+"</script>";
 
-    var debJqrTag='<script src="http://127.0.0.1:8800/content/plugins/editor/js/libs/jQuery_v1.11.1.js"></script>'
+    var debJqrTag='<script src="'+data.global.host+'/content/plugins/editor/js/libs/jQuery_v1.11.1.js"></script>'
     var debSrcTag='<script src="'+data.global.host+'/content/plugins/editor/js/debug.js"></script>';
     var debCssTag='<link rel="stylesheet" type="text/css" href="'+data.global.host+'/content/plugins/editor/css/debug.css">';
     var debAncTag='<script>riseCMSHost="'+data.global.host+'";</script>';
