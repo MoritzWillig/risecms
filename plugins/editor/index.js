@@ -14,15 +14,16 @@ var sourceTracker={
       //add code for new page
     }
 
+    var debJqrTag='<script src="http://127.0.0.1:8800/content/plugins/editor/js/libs/jQuery_v1.11.1.js"></script>'
     var debSrcTag='<script src="'+data.global.host+'/content/plugins/editor/js/debug.js"></script>';
     var debCssTag='<link rel="stylesheet" type="text/css" href="'+data.global.host+'/content/plugins/editor/css/debug.css">';
     var debEdtTag='<script src="'+data.global.host+'/content/plugins/editor/js/libs/ace-builds/src-noconflict/ace.js"></script>';
-    var debTag=debEdtTag+"\n"+debSrcTag+"\n"+debCssTag+"\n";
+    var debTag=debJqrTag+"\n"+debEdtTag+"\n"+debSrcTag+"\n"+debCssTag+"\n";
     //find head tag
     var res=data.httpRes.data.replace(/<\/head>/i,debTag+"</head>");
     if (res.length!=data.httpRes.data) {
       //no header found, append script to end
-      res+=debSrcTag;
+      res+=debTag;
     }
     data.httpRes.data=res;
   },
