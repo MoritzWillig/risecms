@@ -83,6 +83,34 @@ document.body.ondblclick=function(e,x) {
   }
 }
 
+var ids=[];
+var idSE=[];
+var lastInsertSE;
+function addId(id,name) {
+  var srcs=document.getElementById("ess");
+  var idx=ids.indexOf(id);
+  if (idx==-1) {
+    var item=$("<div class='editScreenSourceEntry'>"+id+(name?" - "+name:"")+"</div>");
+    item.click(function() {
+      loadEntry(id);
+    });
+
+    if (!lastInsertSE) {
+      $(srcs).append(item);
+    } else {
+      $(item).insertAfter(lastInsertSE);
+    }
+    lastInsertSE=item;
+      
+    ids.push(id);
+    idSE.push(item);
+
+    return item;
+  } else {
+    return idSE[idx];
+  }
+}
+
 var editor;
 function openEditor() {
   $("body").addClass("editorModal");
@@ -147,32 +175,6 @@ function openEditor() {
   var nodes=document.getElementsByClassName("riseCMSDebug");
   var srcs=document.getElementById("ess");
 
-  var ids=[];
-  var idSE=[];
-  var lastInsertSE;
-  function addId(id,name) {
-    var idx=ids.indexOf(id);
-    if (idx==-1) {
-      var item=$("<div class='editScreenSourceEntry'>"+id+(name?" - "+name:"")+"</div>");
-      item.click(function() {
-        loadEntry(id);
-      });
-
-      if (!lastInsertSE) {
-        $(srcs).append(item);
-      } else {
-        $(item).insertAfter(lastInsertSE);
-      }
-      lastInsertSE=item;
-      
-      ids.push(id);
-      idSE.push(item);
-
-      return item;
-    } else {
-      return idSE[idx];
-    }
-  }
   for (var i=0; i<nodes.length; i++) {
     var src=nodes[i].dataset;
     addId(src.id,src.name);
@@ -200,7 +202,7 @@ function openEditor() {
 
 
   var srcc=document.getElementById("esc");
-  $.ajax("/plugins/editor/content/list",{
+  $.ajax(riseCMSHost+"/plugins/editor/content/list",{
     type:"GET",
     dataType:"json",
     cache:false,
@@ -313,7 +315,7 @@ function loadEntry(id,idFromContent) {
   }
 
   if ((id!=undefined) && (!idFromContent)) {
-    $.ajax("/plugins/editor/"+id+"/get",{
+    $.ajax(riseCMSHost+"/plugins/editor/"+id+"/get",{
       type:"GET",
       dataType:"json",
       cache:false,
@@ -331,7 +333,7 @@ function loadEntry(id,idFromContent) {
     });
   } else {
     if (idFromContent) {
-      $.ajax("/plugins/editor/content/get/"+id,{
+      $.ajax(riseCMSHost+"/plugins/editor/content/get/"+id,{
         type:"GET",
         dataType:"json",
         cache:false,
@@ -416,7 +418,7 @@ function readContent() {
 }
 
 function saveItem(id,header,data) {
-  $.ajax("plugins/editor/"+id+"/set",{
+  $.ajax(riseCMSHost+"/plugins/editor/"+id+"/set",{
     type:"POST",
     dataType:"json",
     data:{
@@ -437,7 +439,7 @@ function saveItem(id,header,data) {
 }
 
 function saveNewItem(header, data) {
-  $.ajax("plugins/editor/new",{
+  $.ajax(riseCMSHost+"/plugins/editor/new",{
     type:"POST",
     dataType:"json",
     data:{
@@ -446,7 +448,9 @@ function saveNewItem(header, data) {
     },
     success:function(data,testStatus,jqXHR) {
       if (data.code==200) {
-        display("ok");
+        display("ok - loading item now");
+        loadEntry(data.id);
+        addId(data.id);
       } else {
         display("could not save item");
       }
@@ -458,7 +462,7 @@ function saveNewItem(header, data) {
 }
 
 function saveContent(id,data) {
-  $.ajax("plugins/editor/content/set/"+id,{
+  $.ajax(riseCMSHost+"/plugins/editor/content/set/"+id,{
     type:"POST",
     dataType:"json",
     data:{
