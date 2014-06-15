@@ -194,12 +194,20 @@ function openEditor() {
   });
   $(srcs).append(load);
 
+  if (riseCMSEditCrNew!=false) {
+    var cradd=$("<div class='editScreenSourceEntry'>create this page</div>");
+    cradd.click(function() {
+      loadEntry(undefined);
+      $("#editScreenHead_path").val(riseCMSEditCrNew);
+    });
+    $(srcs).append(cradd);
+  }
+
   var add=$("<div class='editScreenSourceEntry'>+</div>");
   add.click(function() {
     loadEntry(undefined);
   });
   $(srcs).append(add);
-
 
   var srcc=document.getElementById("esc");
   $.ajax(riseCMSHost+"/plugins/editor/content/list",{
