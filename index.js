@@ -1,10 +1,13 @@
 //load configuration
 var cg=require('./config.js');
-var item=require("./system/models/pageitem.js");
+var nitem=require("./system/models/pageitem.js");
 var user=require("./system/models/user.js");
 var plugins=require("./system/controllers/pluginHandler.js");
 var stat=require("./status.js");
 var fsanchor=require("./fsanchor.js");
+
+var Item=require("./system/models/item.js");
+var ItemInterpreter=require("./system/controllers/itemInterpreter.js");
 
 fsanchor.set("storage","./storage/");
 fsanchor.set("content","./public/content/");
@@ -105,15 +108,35 @@ app.use('/', function(req, res) {
   var evtObj={req:req,res:res,global:global};
   plugins.trigger("page.pre",evtObj);
 
-  item.loadByPath(req.url,function(page,error) {
-    var httpRes=stat.toHTTP(page,error);
+  /*nitem.loadByPath(req.url,function(page,error) {
+    //if is object parse with parent or display error
+    if (stat.isSuccessfull(error)) {
+      console.log(page.data);
+      if (page.data.header.type=="data") {
+        page.item=JSON.stringify(page.item);
+      }
+    }
+
+
+    var httpRes=stat.toHTTP(page.item,error);
 
     var evtObj={req:req,res:res,httpRes:httpRes,global:global};
     plugins.trigger("page.post",evtObj);
     res.send(evtObj.httpRes.code,evtObj.httpRes.data);
   },{
     global:global
-  });
+  });*/
+  
+  ItemInterpreter.create(req.url,true,function(item) {
+    if (item.isValid()) {
+      item.compose(function(final) {
+        res.send(200,final)
+      });
+    } else {
+      res.send(404,item.statusHeader.toString());
+    }
+  },global) {
+
 });
 
 app.use(function(err,req,res) {
