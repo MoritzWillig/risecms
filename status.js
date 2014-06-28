@@ -1,3 +1,4 @@
+cjson=require("json-stringify-safe");
 
 /**
  * constructor for creating
@@ -15,7 +16,12 @@ Status.prototype={
 
   toString:function() {
     var res="["+this.code+" "+this.description+" ]";
-    if (this.info!==undefined) { res+=" "+"<pre>"+JSON.stringify(this.info,undefined,2)+"</pre>"; }
+    if (this.info!==undefined) { res+=" "+"<pre>"+cjson(this.info,function(key,value) {
+      if (value instanceof Buffer) { return value.toString(); }
+      if ((value instanceof Array) && (value.length>=10)) { return "[|Array|>10]"; }
+      
+      return value;
+    },2)+"</pre>"; }
     return res;
   }
 };
@@ -29,7 +35,7 @@ Status.derive=function(code,statusName) {
   } else {
     function derivedStatus(info) { this.info=info; }
     derivedStatus.derive=Status.derive;
-    derivedStatus.prototype = new Status(code,statusName);
+    derivedStatus.prototype = new this(code,statusName);
 
     if (code!=undefined) {
       status.codes[code]=derivedStatus;
@@ -76,7 +82,7 @@ status.proto={
 };
 
 status.proto.item.valid  =status.proto.item.proto.derive(undefined,"valid item proto");
-status.proto.item.success=status.proto.item.proto.derive(undefined,"success item proto");
+status.proto.item.success=status.proto.item.valid.derive(undefined,"success item proto");
 
 status.states={ //tree hirachy of status codes
   items:{
