@@ -1,7 +1,13 @@
+#temp/modules folders
 node_modules/
 
+#dev scripts
+devNodemon
+
+#files of the currently running riseCMS setup
 config.js
 storage/
 public/
 
+#user specific files (= data backups)
 *.zip
