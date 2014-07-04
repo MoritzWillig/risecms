@@ -147,5 +147,6 @@ function findNSurr(str,search,surr,idx,esc) {
 module.exports={
   isEscaped:isEscaped,
   findNEsc:findNEsc,
-  findParenthesis:findParenthesis
+  findParenthesis:findParenthesis,
+  findNSurr:findNSurr
 }

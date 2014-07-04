@@ -127,16 +127,25 @@ app.use('/', function(req, res) {
     global:global
   });*/
   
-  ItemInterpreter.create(req.url,true,function(item) {
+  var pageItem=ItemInterpreter.create(req.url,true,function(item) {
     if (item.isValid()) {
-      item.compose(function(final) {
-        res.send(200,final)
+      //TODO: add page.preCompose
+      ItemInterpreter.compose(item,function(final) {
+        pagePost(200,final);
       });
     } else {
-      res.send(404,item.statusHeader.toString());
+      pagePost(404,"Error - "+item.statusHeader.toString());
     }
-  },global) {
 
+    function pagePost(code,pageStr) {
+      var evtObj={code:code,item:pageItem,page:pageStr,global:global};
+      //TODO: insert page.post
+      //plugins.trigger("page.post",evtObj);
+
+      res.send(evtObj.code,evtObj.page);
+    }
+        
+  },global);
 });
 
 app.use(function(err,req,res) {

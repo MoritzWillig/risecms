@@ -2,6 +2,7 @@ stat=require("../../status.js");
 db=require("./database").getInstance();
 fs=require("fs");
 fsanchor=require("../../fsanchor.js");
+http = require('http');
 
 function ItemLink(item,data,modifiers) {
   this.item=item;
@@ -33,10 +34,11 @@ Item.prototype.header=null;
 Item.prototype.file=undefined;
 Item.prototype.dataScope={};
 
-Item.prototype.itemStr=undefined; //[string/Item]
+Item.prototype.itemStr=[]; //[string/Item]
 Item.prototype.dataObj=undefined; //object
 
 Item.prototype.parent=undefined;
+Item.prototype.modifier={post:[]};
 
 Item.prototype.isValid=function() {
   return !(this.hasHeaderErr() || this.hasFileErr());
@@ -55,13 +57,17 @@ Item.prototype.loadHeader=function(callback) {
 
   var self=this;
   function cb(err, result) {
-    if (result!=null) {
-      self.statusHeader=new stat.states.database.DATABASE_ERROR({err:err,this:this});
+    if ((err!=null) || (result.length!=1)) {
+      if ((err==null) && (result.length==0)) {
+        self.statusHeader=new stat.states.items.NOT_FOUND({this:self});
+      } else {
+        self.statusHeader=new stat.states.database.DATABASE_ERROR({err:err,this:self});
+      }
     } else {
       self.header=result[0];
       self.statusHeader=new stat.states.items.HEADER_LOADED();
-      callback(self);
     }
+    callback.apply(self,[self]);
   }
 
   switch (this.idType) {
@@ -106,15 +112,18 @@ Item.prototype.loadFile=function(callback) {
   this.file=undefined;
 
   var path=this.resolveIdPath();
+  var self=this;
   fs.readFile(path,function(err,data) {
     if (err!=null) {
-      this.statusFile=new stat.states.items.NO_FILE({err:err,this:this});
+      self.statusFile=new stat.states.items.NO_FILE({err:err,this:self});
     } else {
-      this.file=data.toString();
-      this.statusFile=new stat.states.items.FILE_LOADED();
-      callback(this);
+      self.file=data.toString();
+
+      self.statusFile=new stat.states.items.FILE_LOADED();
     }
+    callback.apply(self,[self]);
   });
 }
+
 
 module.exports=Item;

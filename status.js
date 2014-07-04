@@ -4,42 +4,51 @@ cjson=require("json-stringify-safe");
  * constructor for creating
  * new status prototypes/classes
 **/
-function Status(code,description) {
-  this.code=code;
-  this.description=description;
+function Status(info) {
+  this.info=info;
 }
 
 Status.prototype={
-  code:-1,
-  description:"",
+  //code:-1,
+  //description:"",
   info:undefined,
 
   toString:function() {
     var res="["+this.code+" "+this.description+" ]";
-    if (this.info!==undefined) { res+=" "+"<pre>"+cjson(this.info,function(key,value) {
+    if (this.info!==undefined) { res+=" "+"<pre>"+escape(cjson(this.info,function(key,value) {
       if (value instanceof Buffer) { return value.toString(); }
       if ((value instanceof Array) && (value.length>=10)) { return "[|Array|>10]"; }
       
       return value;
-    },2)+"</pre>"; }
+    },2))+"</pre>"; }
     return res;
   }
 };
 
+function escape(str) {
+  return str.replace(/</gi,"&lt;").replace(/>/gi,"&gt;");
+}
+
 /**
  * creates a new status class
+ * this function is NOT part of the prototype as it is carried along with the constructors to prevent
+ * deriving instances
 **/
-Status.derive=function(code,statusName) {
+Status.derive=function(code,description) {
   if ((code!=undefined) && (status.codes[code])) {
     throw "Status code "+code+" was already assigned to an status";
   } else {
     function derivedStatus(info) { this.info=info; }
-    derivedStatus.derive=Status.derive;
-    derivedStatus.prototype = new this(code,statusName);
+    derivedStatus.prototype = new this(undefined);
+    derivedStatus.derive=this.derive;
 
+    derivedStatus.prototype.code=code;
+    derivedStatus.prototype.description=description;
+    
     if (code!=undefined) {
       status.codes[code]=derivedStatus;
     }
+    
     return derivedStatus;
   }
 };

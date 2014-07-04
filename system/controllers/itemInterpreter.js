@@ -15,7 +15,7 @@ itemInterpreter={
   create:function(id,asPath,callback,data) {
     if (typeof callback=="undefined") { callback=function() {}; }
 
-    root=new Item(id,asPath);
+    var root=new Item(id,asPath);
     root.loadHeader(cbInterpret);
 
     function cbInterpret() {
@@ -45,7 +45,7 @@ itemInterpreter={
       }
 
       function cbFile(next) {
-        root.itemStr=undefined;
+        root.itemStr=[]
         root.dataObj=undefined;
 
         return function(item) {
@@ -55,7 +55,7 @@ itemInterpreter={
           }
 
           next();
-        }
+        };
       }
 
       function interpretText() {
@@ -65,17 +65,19 @@ itemInterpreter={
 
       function interpretStatic() {
         var str=root.file;
-        
         var subItems=[];
-        var res=findParenthesis(str,"{{","}}","\\",idx);
+
+        //extract subitem strings
         var lastItemEnd=0;
-        while ((res>=0) && (res!=[-1,-1])) {
+        var res=findParenthesis(str,"{{","}}","\\",lastItemEnd);
+        while ((!(res<0)) && (
+          !((res[0]==-1) && (res[1]==-1)))) {
           //save plain text which does not contain item information
           var nItemStr=str.substr(lastItemEnd,res[0]-lastItemEnd);
           if (nItemStr!="") {
             root.itemStr.push(nItemStr);
-            lastItemEnd=res[1]+1;
           }
+          lastItemEnd=res[1];
 
           var si={
             range:res,
@@ -84,7 +86,7 @@ itemInterpreter={
           subItems.push(si);
           root.itemStr.push(si);
 
-          var res=findParenthesis(str,"{{","}}","\\",idx);
+          res=findParenthesis(str,"{{","}}","\\",lastItemEnd);
         }
         
         if (res<0) {
@@ -94,15 +96,17 @@ itemInterpreter={
           callback(root);
         } else {
           //save last plain text which does not contain item information
-          var nItemStr=str.substr(lastItemEnd,res[0]-lastItemEnd);
+          var nItemStr=str.substr(lastItemEnd,str.length);
           if (nItemStr!="") {
             root.itemStr.push(nItemStr);
-            lastItemEnd=res[1]+1;
           }
 
+          
+          //split and parse subitem strings
           var subItemCt=1;
           for (var i=0; i<subItems.length; i++) {
             var s=subItems[i].str;
+            var last=0;
 
             var id="";
             var addData=undefined;
@@ -111,9 +115,9 @@ itemInterpreter={
             //extract name
             var idx=s.indexOf("|",0);
             if (idx!=-1) {
-              id=s.substr(last,idx-1);
+              id=s.substr(last,idx);
               s=s.substr(idx+1,s.length);
-
+              
               last=idx+1;
             } else {
               id=s;
@@ -131,7 +135,6 @@ itemInterpreter={
             if (s.length!=0) {
               script=s;
             }
-
 
             if (!isInline(id)) {
               //parse as item
@@ -154,7 +157,7 @@ itemInterpreter={
           }
           //check if all items are already loaded - use this with itemCt=1 
           //to prevent syncronous callbacks to return before the subItem.script could be set
-          subItemCt(undefined);
+          subItemCallback(undefined);
           
           function isInline(str) { return ((str.length>0) && (str[0]=="$")); }
           function extractData(str) {
@@ -203,42 +206,55 @@ itemInterpreter={
 
   compose:function(item,callback) {
     var cs={};
+    var itemsCt=1;
     for (var i=0; i<item.itemStr.length; i++) {
       var s=item.itemStr[i];
 
-      var itemsCt=1;
-      if (s instanceof Item) {
-        itemsCt++;
-        s.compose((function(i) { return function(itemStr) {
-          cs[i]=itemStr;
-          itemCb();
-        }; })(i));
-      } else {
-        if (typeof s.variable!="undefined") {
+      itemsCt++;
+      if (typeof s=="object") {
+        if (s.item instanceof Item) {
+          //is item
+          
+          if (s.item.isValid()) {
+            itemInterpreter.compose(s.item,(function(i) { return function(itemStr) {
+              cs[i]=itemStr;
+              //cs[i]="%%%ITEM%%%";
+              itemCb();
+            }; })(i));
+          } else {
+            cs[i]=
+              s.item.statusHeader.toString()+"\n"+
+              s.item.statusFile  .toString()+"\n";
+            itemCb();
+          }
+        } else {
+          //is variable
           //lookup data from data scope
           cs[i]="%%%VARIABLE%%%";
-        } else {
-          //is plaintext do nothing
-          //TODO can be script
-          cs[i]=s;
+          itemCb();
         }
-      } 
+      } else {
+        //is plaintext
+        cs[i]=s;
+        itemCb();
+      }
     }
     itemCb();
 
     function itemCb() {
       itemsCt--;
       if (itemsCt==0) {
-        var final=cs.join("");
-
-        CALL ITEM SCRIPT
-
+        var final=(cs[0]==undefined)?"":cs[0];
+        for (var i=1; cs[i]!=undefined; i++) {
+          final+=cs[i];
+          
+          //TODO: CALL ITEM SCRIPT
+        }
         callback(final);
       }
     }
   }
 
 };
-
 
 module.exports=itemInterpreter;
