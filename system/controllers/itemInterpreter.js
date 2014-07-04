@@ -1,4 +1,5 @@
 Item=require("../models/item.js");
+ItemLink=require("../models/itemLink.js");
 findParenthesis=require("../helpers/parenthesis.js").findParenthesis;
 findNSurr=require("../helpers/parenthesis.js").findNSurr;
 
@@ -65,8 +66,7 @@ itemInterpreter={
 
       function interpretStatic() {
         var str=root.file;
-        var subItems=[];
-
+        
         //extract subitem strings
         var lastItemEnd=0;
         var res=findParenthesis(str,"{{","}}","\\",lastItemEnd);
@@ -83,9 +83,8 @@ itemInterpreter={
             range:res,
             str:str.substr(res[0]+"{{".length,res[1]-res[0]-"{{".length-"}}".length)
           };
-          subItems.push(si);
           root.itemStr.push(si);
-
+          
           res=findParenthesis(str,"{{","}}","\\",lastItemEnd);
         }
         
@@ -104,8 +103,12 @@ itemInterpreter={
           
           //split and parse subitem strings
           var subItemCt=1;
-          for (var i=0; i<subItems.length; i++) {
-            var s=subItems[i].str;
+          for (var i=0; i<root.itemStr.length; i++) {
+            if (typeof root.itemStr[i]=="string") {
+              //skip plaintext
+              continue;
+            }
+            var s=root.itemStr[i].str;
             var last=0;
 
             var id="";
@@ -141,17 +144,16 @@ itemInterpreter={
               subItemCt++;
               
               //load sub item
-              subItems[i].item=itemInterpreter.create(id,asPath,subItemCallback,data);
+              root.itemStr[i]=new ItemLink(
+                itemInterpreter.create(id,asPath,subItemCallback),
+                data,
+                {post:[script]}
+              );
               
-              //store script
-              if (script!=undefined) {
-                subItems[i].item.modifier.post.push(script);
-              }
-              subItems[i].item.parent=root;
+              root.itemStr[i].item.parent=root;
             } else {
-              //as variable - evaluated on compose
-              subItems[i].variable=s.split(".");
-              subItems.splice(i,1);
+              //as variable path - evaluated on compose
+              root.itemStr[i]=s.split(".");
               i--;
             }
           }
@@ -211,22 +213,23 @@ itemInterpreter={
       var s=item.itemStr[i];
 
       itemsCt++;
-      if (typeof s=="object") {
-        if (s.item instanceof Item) {
-          //is item
-          
-          if (s.item.isValid()) {
+      if (typeof s!="string") {
+        if (s instanceof ItemLink) {
+          cs[i]="%%%ITEM%%%"; itemCb();
+
+          /*if (s.item.isValid()) {
+            //TODO: apply data from ItemLink
             itemInterpreter.compose(s.item,(function(i) { return function(itemStr) {
               cs[i]=itemStr;
-              //cs[i]="%%%ITEM%%%";
               itemCb();
-            }; })(i));
+            }; })(i),s.data);
           } else {
             cs[i]=
               s.item.statusHeader.toString()+"\n"+
               s.item.statusFile  .toString()+"\n";
             itemCb();
           }
+          */
         } else {
           //is variable
           //lookup data from data scope

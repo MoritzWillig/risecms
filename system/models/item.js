@@ -4,17 +4,6 @@ fs=require("fs");
 fsanchor=require("../../fsanchor.js");
 http = require('http');
 
-function ItemLink(item,data,modifiers) {
-  this.item=item;
-  this.data=(typeof data != "undefined")?data:{};
-  this.modifiers=(typeof modifiers != "undefined")?modifiers:[];
-}
-
-ItemLink.prototype.item=undefined;
-ItemLink.prototype.data={};
-ItemLink.prototype.modifier={post:[]};
-
-
 function Item(id,asPath) {
   this.id=id;
   this.idType=(asPath==true)?"path":(checkNumber(id))?"id":"name";
