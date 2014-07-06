@@ -3,29 +3,24 @@ ItemLink=require("../models/itemLink.js");
 findParenthesis=require("../helpers/parenthesis.js").findParenthesis;
 findNSurr=require("../helpers/parenthesis.js").findNSurr;
 
-/**
- * checks if the given parameter can be interpreted as a number
- * @param  {*} x parameter to be checked
- * @return {boolean}   wheter or not the parameter is a number
- */
-function checkNumber(x) {
-  return !isNaN(+x);
-}
 
 itemInterpreter={
-  create:function(id,asPath,callback,data) {
+  create:function(id,asPath,callback,data) { console.log("loading",id);
     if (typeof callback=="undefined") { callback=function() {}; }
 
     var root=new Item(id,asPath);
     root.loadHeader(cbInterpret);
+    
+    var itemLoaded=false;
+    var parentLoaded=false;
 
     function cbInterpret() {
       if (!root.isValid()) {
-        callback(root);
+        checkCallback(true);
         return;
       }
 
-      var id=root.header.id;
+      id=root.header.id;
       switch (root.header.type) {
         case "static":
           root.loadFile(cbFile(interpretStatic));
@@ -41,7 +36,7 @@ itemInterpreter={
           break;
         default:
           root.statusHeader=new stat.states.item.UNKNOWN_RESOURCE_TYPE();
-          callback(root);
+          checkCallback(true);
           break;
       }
 
@@ -51,7 +46,7 @@ itemInterpreter={
 
         return function(item) {
           if (!root.isValid()) {
-            callback(root);
+            checkCallback(true);
             return;
           }
 
@@ -61,7 +56,7 @@ itemInterpreter={
 
       function interpretText() {
         root.itemStr=[root.file];
-        callback(root);
+        checkCallback(true);
       }
 
       function interpretStatic() {
@@ -92,7 +87,7 @@ itemInterpreter={
           var idx=-(res-1);
           var sub=str.substr(idx,10);
           root.statusFile=new stat.states.static.MISMATCHING_PARENTHESIS({position:idx,substr:sub});
-          callback(root);
+          checkCallback(true);
         } else {
           //save last plain text which does not contain item information
           var nItemStr=str.substr(lastItemEnd,str.length);
@@ -110,6 +105,8 @@ itemInterpreter={
             }
             var s=root.itemStr[i].str;
             var last=0;
+
+            //console.log("id>",id);
 
             var id="";
             var addData=undefined;
@@ -145,7 +142,7 @@ itemInterpreter={
               
               //load sub item
               root.itemStr[i]=new ItemLink(
-                itemInterpreter.create(id,asPath,subItemCallback),
+                itemInterpreter.create(id,false,subItemCallback),
                 data,
                 {post:[script]}
               );
@@ -154,7 +151,6 @@ itemInterpreter={
             } else {
               //as variable path - evaluated on compose
               root.itemStr[i]=s.split(".");
-              i--;
             }
           }
           //check if all items are already loaded - use this with itemCt=1 
@@ -174,7 +170,7 @@ itemInterpreter={
             subItemCt--;
             //if all sub items are loaded return
             if (subItemCt==0) {
-              callback(root);
+              checkCallback(true);
             }
           }
 
@@ -185,10 +181,12 @@ itemInterpreter={
         var path=root.resolveIdPath();
         var script=require(path);
         try {
-          script(root,callback);
+          script(root,function() {
+            checkCallback(true);
+          });
         } catch (e) {
           root.statusFile=new stat.states.item.INVALID_ITEM_FILE({action:"executing as script"});
-          callback(root);
+          checkCallback(true);
         }
       }
 
@@ -199,10 +197,30 @@ itemInterpreter={
         } catch(e) {
           root.statusFile=new stat.states.items.INVALID_ITEM_FILE({action:"parsing file as json"});
         }
-        callback(root);
+        checkCallback(true);
+      }
+
+      //load parent
+      var parentName=root.header.parent;
+      if (parentName!="") {
+        var parent=itemInterpreter.create(parentName,false,function() {
+          parentLoaded=true;
+          checkCallback();
+        },undefined);
+        root.staticParent=parent;
+      } else {
+        parentLoaded=true;
+        checkCallback();
       }
     }
 
+    function checkCallback(addItemLoaded) {
+      if (addItemLoaded==true) { itemLoaded=true; }
+      if (itemLoaded && parentLoaded) {
+        callback(root);
+      }
+    }
+    
     return root;
   },
 
@@ -215,9 +233,9 @@ itemInterpreter={
       itemsCt++;
       if (typeof s!="string") {
         if (s instanceof ItemLink) {
-          cs[i]="%%%ITEM%%%"; itemCb();
+          //cs[i]="%%%ITEM%%%"; itemCb();
 
-          /*if (s.item.isValid()) {
+          if (s.item.isValid()) {
             //TODO: apply data from ItemLink
             itemInterpreter.compose(s.item,(function(i) { return function(itemStr) {
               cs[i]=itemStr;
@@ -229,7 +247,7 @@ itemInterpreter={
               s.item.statusFile  .toString()+"\n";
             itemCb();
           }
-          */
+          
         } else {
           //is variable
           //lookup data from data scope

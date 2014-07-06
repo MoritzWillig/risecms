@@ -4,6 +4,15 @@ fs=require("fs");
 fsanchor=require("../../fsanchor.js");
 http = require('http');
 
+/**
+ * checks if the given parameter can be interpreted as a number
+ * @param  {*} x parameter to be checked
+ * @return {boolean}   wheter or not the parameter is a number
+ */
+function checkNumber(x) {
+  return !isNaN(+x);
+}
+
 function Item(id,asPath) {
   this.id=id;
   this.idType=(asPath==true)?"path":(checkNumber(id))?"id":"name";
@@ -26,7 +35,8 @@ Item.prototype.dataScope={};
 Item.prototype.itemStr=[]; //[string/Item]
 Item.prototype.dataObj=undefined; //object
 
-Item.prototype.parent=undefined;
+Item.prototype.parent=undefined; //parent including this item
+Item.prototype.staticParent=undefined; //static parent from database
 Item.prototype.modifier={post:[]};
 
 Item.prototype.isValid=function() {
