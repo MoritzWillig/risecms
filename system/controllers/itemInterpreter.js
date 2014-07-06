@@ -16,6 +16,8 @@ itemInterpreter={
 
     function cbInterpret() {
       if (!root.isValid()) {
+        //we did not get a header to determine if a parent exists
+        parentLoaded=true;
         checkCallback(true);
         return;
       }
@@ -105,9 +107,7 @@ itemInterpreter={
             }
             var s=root.itemStr[i].str;
             var last=0;
-
-            //console.log("id>",id);
-
+            
             var id="";
             var addData=undefined;
             var script=undefined;
@@ -224,58 +224,67 @@ itemInterpreter={
     return root;
   },
 
-  compose:function(item,callback) {
-    var cs={};
-    var itemsCt=1;
-    for (var i=0; i<item.itemStr.length; i++) {
-      var s=item.itemStr[i];
+  compose:function(item,callback,childs,asChild) {
+    if (typeof childs=="undefined") { childs=[]; }
+    if (typeof asChild=="undefined") { asChild=false; }
 
-      itemsCt++;
-      if (typeof s!="string") {
-        if (s instanceof ItemLink) {
-          //cs[i]="%%%ITEM%%%"; itemCb();
+    if ((!asChild) && (item.staticParent!=undefined)) {
+      //compose parent - this item (if needed) will be composed again as child (=> asChild==true)
+      itemInterpreter.compose(item.staticParent,callback,childs.push(item),false);
+    } else {
+      //parse item normally
+      
+      var cs={};
+      var itemsCt=1;
+      for (var i=0; i<item.itemStr.length; i++) {
+        var s=item.itemStr[i];
 
-          if (s.item.isValid()) {
-            //TODO: apply data from ItemLink
-            itemInterpreter.compose(s.item,(function(i) { return function(itemStr) {
-              cs[i]=itemStr;
+        itemsCt++;
+        if (typeof s!="string") {
+          if (s instanceof ItemLink) {
+            //cs[i]="%%%ITEM%%%"; itemCb();
+
+            if (s.item.isValid()) {
+              //TODO: apply data from ItemLink
+              itemInterpreter.compose(s.item,(function(i) { return function(itemStr) {
+                cs[i]=itemStr;
+                itemCb();
+              }; })(i),s.data);
+            } else {
+              cs[i]=
+                s.item.statusHeader.toString()+"\n"+
+                s.item.statusFile  .toString()+"\n";
               itemCb();
-            }; })(i),s.data);
+            }
+            
           } else {
-            cs[i]=
-              s.item.statusHeader.toString()+"\n"+
-              s.item.statusFile  .toString()+"\n";
+            //is variable
+            //lookup data from data scope
+            cs[i]="%%%VARIABLE%%%";
             itemCb();
           }
-          
         } else {
-          //is variable
-          //lookup data from data scope
-          cs[i]="%%%VARIABLE%%%";
+          //is plaintext
+          cs[i]=s;
           itemCb();
         }
-      } else {
-        //is plaintext
-        cs[i]=s;
-        itemCb();
       }
-    }
-    itemCb();
+      itemCb();
 
-    function itemCb() {
-      itemsCt--;
-      if (itemsCt==0) {
-        var final=(cs[0]==undefined)?"":cs[0];
-        for (var i=1; cs[i]!=undefined; i++) {
-          final+=cs[i];
-          
-          //TODO: CALL ITEM SCRIPT
+      function itemCb() {
+        itemsCt--;
+        if (itemsCt==0) {
+          var final=(cs[0]==undefined)?"":cs[0];
+          for (var i=1; cs[i]!=undefined; i++) {
+            final+=cs[i];
+            
+            //TODO: CALL ITEM SCRIPT
+          }
+          callback(final);
         }
-        callback(final);
       }
     }
   }
-
 };
 
 module.exports=itemInterpreter;
