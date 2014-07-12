@@ -130,9 +130,10 @@ app.use('/', function(req, res) {
   var pageItem=ItemInterpreter.create(req.url,true,function(item) {
     if (item.isValid()) {
       //TODO: add page.preCompose
+      
       ItemInterpreter.compose(item,function(final) {
         pagePost(200,final);
-      });
+      },undefined,undefined,global);
     } else {
       pagePost(404,"Error - "+item.statusHeader.toString());
     }

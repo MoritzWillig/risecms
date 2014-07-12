@@ -34,6 +34,7 @@ Item.prototype.dataScope={};
 
 Item.prototype.itemStr=[]; //[string/Item]
 Item.prototype.dataObj=undefined; //object
+Item.prototype.script=undefined; //Script object
 
 Item.prototype.parent=undefined; //parent including this item
 Item.prototype.staticParent=undefined; //static parent from database
