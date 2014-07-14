@@ -15,36 +15,38 @@ stat=require("../../status.js");
  */
 
 Script=function() {
-  this.setEvenParent(this);
+  this.setEventParent(this);
 }
 
-Script.prototype=new EventChain(["load","compose"]);
+Script.prototype=new EventChain(["run"]);
 
-Script.prototype.loadFile(file,callback) {
+Script.prototype.loadFile=function(file) {
   try {
     require(file)(this);
-    this.trigger("load",[this,callback]);
+    return true;
   } catch(e) {
-    callback(undefined,new stat.states.items.SCRIPT_CRASH({event:"load",error:e}));
+    return false;
   }
 }
 
-Script.prototype.loadText(scriptCode,callback) {
+Script.prototype.loadText=function(scriptCode,callback) {
   try {
     var module={}; //setup variables to be accessed by the script
     eval(scriptCode); //eval script
     module.exports(this); //run actual code
 
-    this.trigger("load",[this,callback]);
+    return true;
   } catch(e) {
-    callback(undefined,new stat.states.items.SCRIPT_CRASH({event:"load",error:e}));
+    return e;
   }
 }
 
 Script.prototype.run=function(item,callback) {
   try {
-    this.trigger("compose",[this,item,callback]);
+    this.trigger("run",[this,item,callback]);
   } catch(e) {
-    callback(undefined,new stat.states.items.SCRIPT_CRASH({event:"compose",error:e}));
+    callback(undefined,new stat.states.items.SCRIPT_CRASH({event:"run",error:e}));
   }
 }
+
+module.exports=Script;

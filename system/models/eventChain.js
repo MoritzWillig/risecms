@@ -11,10 +11,10 @@ EventChain=function(events,parent) {
       this.registerEvent(events[e]);
     }
   }
-  setEventParent(parent?parent:this);
+  this.setEventParent(parent?parent:this);
 };
 
-EventChain.setEventParent(parent) {
+EventChain.prototype.setEventParent=function(parent) {
   this.parent=parent;
 }
 

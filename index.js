@@ -135,7 +135,11 @@ app.use('/', function(req, res) {
         pagePost(200,final);
       },undefined,undefined,global);
     } else {
-      pagePost(404,"Error - "+item.statusHeader.toString());
+      if (item.hasHeaderErr()) {
+        pagePost(404,"Error - "+item.statusHeader.toString());
+      } else {
+        pagePost(404,"Error - "+item.statusFile.toString());
+      }
     }
 
     function pagePost(code,pageStr) {

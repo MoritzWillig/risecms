@@ -1,4 +1,5 @@
 Item=require("../models/item.js");
+Script=require("../models/script.js");
 ItemLink=require("../models/itemLink.js");
 findParenthesis=require("../helpers/parenthesis.js").findParenthesis;
 findNSurr=require("../helpers/parenthesis.js").findNSurr;
@@ -122,18 +123,36 @@ itemInterpreter={
             } else {
               id=s;
               last=s.length;
+              s="";
             }
 
             //extract data
-            idx=findNSurr(s,"|",0,"\"");
-            if (idx!=-1) {
-              data=s.substr(last,idx);
-              s=s.substr(idx+1,s.length);
+            if (s.length!=0) {
+              idx=findNSurr(s,"|",0,"\"");
+              if (idx!=-1) {
+                addData=s.substr(last,idx);
+                s=s.substr(idx+1,s.length);
+              } else {
+                addData=s;
+                s="";
+              }
             }
 
             //extract script
             if (s.length!=0) {
-              script=s;
+              script=new Script();
+              var e=script.loadText(s);
+              if (e!=null) {
+                //throw error
+                root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
+                  action:"parsing inline script",
+                  exp:s,
+                  error:e,
+                  errorStr:e.toString()
+                });
+                checkCallback(true);
+                return;
+              }
             }
 
             if (!isInline(id)) {
@@ -143,17 +162,18 @@ itemInterpreter={
               //load sub item
               root.itemStr[i]=new ItemLink(
                 itemInterpreter.create(id,false,subItemCallback),
-                data,
+                addData,
                 {post:[script]}
               );
               
               root.itemStr[i].item.parent=root;
             } else {
               //as variable path - evaluated on compose
-              root.itemStr[i]=s.split(".");
-              root.itemStr[i][0]=root.itemStr[i][0].substr(1,root.itemStr[i][0].length);
+              root.itemStr[i]=id.split(".");
+              root.itemStr[i][0]=root.itemStr[i][0].substr(1,root.itemStr[i][0].length); //removed leading $
             }
           }
+
           //check if all items are already loaded - use this with itemCt=1 
           //to prevent syncronous callbacks to return before the subItem.script could be set
           subItemCallback(undefined);
@@ -180,15 +200,12 @@ itemInterpreter={
 
       function interpretScript() {
         var path=root.resolveIdPath();
-        var script=require(path);
-        try {
-          script(root,function() {
-            checkCallback(true);
-          });
-        } catch (e) {
-          root.statusFile=new stat.states.item.INVALID_ITEM_FILE({action:"executing as script"});
-          checkCallback(true);
+        var script=new Script();
+        var e=script.loadFile(path);
+        if (e!=null) {
+          root.statusFile=new stat.states.items.INVALID_ITEM_FILE({action:"parsing script",error:e});
         }
+        checkCallback(true);
       }
 
       function interpretData() {
@@ -249,21 +266,20 @@ itemInterpreter={
       
       switch (item.header.type) {
       case "static":
-        
         break;
       case "text":
         callback(item.itemStr[0]);
-        break;
+        return;
       case "script":
-        item.script.trigger("compose",item);
-        break;
+        callback("%%%script%%%");      
+        //item.script.trigger("run",[item,callback]);
+        return;
       case "data":
-        root.loadFile(cbFile(interpretData));
-        break;
+        callback("%%%not implemented yet%%%");
+        return;
       default:
-        root.statusHeader=new stat.states.item.UNKNOWN_RESOURCE_TYPE();
-        checkCallback(true);
-        break;
+        callback((new stat.states.item.UNKNOWN_RESOURCE_TYPE()).toString());
+        return;
       }
 
       var cs={};
@@ -296,7 +312,7 @@ itemInterpreter={
           } else {
             //is variable
             //lookup data from data scope
-            cs[i]="%%%VARIABLE%%%";
+
             /*
             child - data delivered from child
             data - inline or item data
@@ -318,10 +334,13 @@ itemInterpreter={
                   var chLocal=childs.slice();
                   chLocal.pop();
                   
-                  cs[i]=itemInterpreter.compose(
-                    childs[childs.length-1],itemCb,
+                  itemInterpreter.compose(
+                    childs[childs.length-1],(function(i) { return function(itemStr) {
+                      cs[i]=itemStr;
+                      itemCb();
+                    }; })(i),
                     chLocal,true,global
-                    );
+                  );
                 }
                 break;
               case "data":
@@ -387,7 +406,9 @@ itemInterpreter={
                 case "undefined":
                   //follow() would have already thrown an error if undefined
                   cs[i]=(new stat.states.items.UNKNOWN_VARIABLE({"path":v.join(".")})).toString();
+                  break;
                 default:
+                  cs[i]=(new stat.states.items.UNKNOWN_VARIABLE({"path":v.join("."),"msg":"unkown type"})).toString();
                   break;
                 }
                 itemCb();
