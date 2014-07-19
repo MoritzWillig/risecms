@@ -9,5 +9,8 @@ config.js
 storage/
 public/
 
+#generated files
+documentation
+
 #user specific files (= data backups)
 *.zip
