@@ -107,12 +107,17 @@ status.states={ //tree hirachy of status codes
     HEADER_LOADED: status.proto.item.success.derive(502,"Item header was loaded"),
     FILE_LOADED:  status.proto.item.success.derive(503,"Item file was loaded"),
     INVALID_ID: Status.derive(504,"The id to be loaded was invalid"),
-    SCRIPT_CRASH: Status.derive(505,"The item script crashed"),
-
+    
     UNKNOWN_VARIABLE_ROOT: Status.derive(506,"The variable root can not be found"),
     UNKNOWN_VARIABLE: Status.derive(507,"The variable does not exist"),
     INVALID_VARIABLE_TYPE: Status.derive(508,"The type can not be included as a variable"),
     ITEM_HAS_NO_CHILD: Status.derive(509,"The item has no child"),
+
+    script:{
+      TIMEOUT:Status.derive(550,"The script took to long to complete"),
+      INVALID_TYPE:Status.derive(551,"The script did not return a string"),
+      CRASH:Status.derive(552,"The script crashed")
+    },
 
     static:{
       MISMATCHING_PARENTHESIS: status.proto.item.proto.derive(300,"Mismatching parenthesis in item text")
@@ -132,7 +137,7 @@ status.states={ //tree hirachy of status codes
   users:{
     IS_USER:status.proto.users.derive(-100,"The element is a user"),
     NO_USER:status.proto.users.derive(-101,"The element is no user"),
-    NOT_AUTHENTICATED:status.proto.users.derive(-102,"The user was not authenicated")
+    NOT_AUTHENTICATED:status.proto.users.derive(-102,"The user was not authenticated")
   }
 };
 

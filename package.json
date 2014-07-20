@@ -15,5 +15,5 @@
     "bcryptjs":"0.7.x",
     "json-stringify-safe":"5.0.x"
   },
-  "engine": "node 0.10.26"
+  "engine": "node 0.11.x"
 }

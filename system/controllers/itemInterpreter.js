@@ -4,6 +4,8 @@ ItemLink=require("../models/itemLink.js");
 findParenthesis=require("../helpers/parenthesis.js").findParenthesis;
 findNSurr=require("../helpers/parenthesis.js").findNSurr;
 
+scriptEnv=new (require("./scriptEnvironment.js"))();
+
 
 itemInterpreter={
   create:function(id,asPath,callback,data) { console.log("loading",id);
@@ -38,7 +40,7 @@ itemInterpreter={
           root.loadFile(cbFile(interpretData));
           break;
         default:
-          root.statusHeader=new stat.states.item.UNKNOWN_RESOURCE_TYPE();
+          root.statusHeader=new stat.states.items.UNKNOWN_RESOURCE_TYPE();
           checkCallback(true);
           break;
       }
@@ -203,7 +205,13 @@ itemInterpreter={
         var script=new Script();
         var e=script.loadFile(path);
         if (e!=null) {
-          root.statusFile=new stat.states.items.INVALID_ITEM_FILE({action:"parsing script",error:e});
+          root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
+            action:"parsing script",
+            error:e,
+            errorStr:e.toString()
+          });
+        } else {
+          root.script=script;
         }
         checkCallback(true);
       }
@@ -271,14 +279,20 @@ itemInterpreter={
         callback(item.itemStr[0]);
         return;
       case "script":
-        callback("%%%script%%%");      
+        scriptEnv.run(item.script,{
+          item:item,
+          global:global
+        },function(result) {
+          callback(result);
+        });
+        //callback("%%%script%%%");      
         //item.script.trigger("run",[item,callback]);
         return;
       case "data":
         callback("%%%not implemented yet%%%");
         return;
       default:
-        callback((new stat.states.item.UNKNOWN_RESOURCE_TYPE()).toString());
+        callback((new stat.states.items.UNKNOWN_RESOURCE_TYPE()).toString());
         return;
       }
 

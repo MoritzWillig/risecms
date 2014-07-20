@@ -1,52 +1,36 @@
-EventChain=require("./eventChain.js");
 stat=require("../../status.js");
+vm=require("vm");
 
 /**
  * the script class stores scripts for later use
- * in both cases (load from file or text) the code has to export a
- * function to the "module.exports" variable which will then be called with
- * the script object itself to register event handlers
  *
- * list of event handlers to register
- * load: (Script,callback) do initial setup which is neccessary for later use (called once on (re)loading the script)
- * compose: (Script, Item,callback) is called on every composition of an item holding this script
- *
- * callbacks given to the events have to be called. The callback signature is (data,undefined/Status)
+ * on syncronous execution "str" has to be set otherwise module.callback has to be used
  */
 
 Script=function() {
-  this.setEventParent(this);
-}
-
-Script.prototype=new EventChain(["run"]);
+};
 
 Script.prototype.loadFile=function(file) {
   try {
-    require(file)(this);
-    return true;
-  } catch(e) {
-    return false;
-  }
-}
+    var file=file.replace(/"/g,"\\\""); //escape path to js-string
+    this.scriptText='require("'+file+'");';
+    this.script=vm.createScript(this.scriptText, 'script');
 
-Script.prototype.loadText=function(scriptCode,callback) {
-  try {
-    var module={}; //setup variables to be accessed by the script
-    eval(scriptCode); //eval script
-    module.exports(this); //run actual code
-
-    return true;
+    return null;
   } catch(e) {
     return e;
   }
-}
+};
 
-Script.prototype.run=function(item,callback) {
+Script.prototype.loadText=function(scriptCode,callback) {
   try {
-    this.trigger("run",[this,item,callback]);
+    this.scriptText=scriptCode;
+    this.script=vm.createScript(this.scriptText, 'script');
+
+    return null;
   } catch(e) {
-    callback(undefined,new stat.states.items.SCRIPT_CRASH({event:"run",error:e}));
+    return e;
   }
-}
+};
 
 module.exports=Script;
