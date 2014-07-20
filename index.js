@@ -9,6 +9,7 @@ var fsanchor=require("./fsanchor.js");
 var Item=require("./system/models/item.js");
 var ItemInterpreter=require("./system/controllers/itemInterpreter.js");
 
+fsanchor.set("root"   ,"./");
 fsanchor.set("storage","./storage/");
 fsanchor.set("content","./public/content/");
 fsanchor.set("plugins","./plugins/");

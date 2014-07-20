@@ -1,7 +1,9 @@
 stat=require("../../status.js");
-config=require("../../config.js");
+cg=require("../../config.js");
 vm=require("vm");
 domain=require("domain");
+fsanchor=require("../../fsanchor.js");
+path=require("path");
 
 function ScriptEnvironment() {
 }
@@ -41,31 +43,55 @@ ScriptEnvironment.prototype.run=function(script,env,callback) {
       })).toString());
     });
 
-    env.str=undefined;
+    //setup environment
     env.module={};
     env.module.callback=scriptCb;
     
-    env = {
-      require: require,
-      console: console,
-      exports: exports,
-      module: {
-        exports: exports
+    var required={};
+    var resolveModule=function(module) {
+      if (module.charAt(0)!=='.') { return module; }
+      return fsanchor.resolve(module,"root"); //scripts paths are relative to risecms root
+    };
+    var envRequire=function(name) {
+      name=resolveModule(name);
+
+      if (!required[name]) {
+        //exchange cache 
+        var c=require.cache;
+        require.cache=envRequire.cache;
+        
+        required[name]=require(name);
+        
+        require.cache=c;
       }
+      
+      return required[name];
+    };
+    envRequire.cache=required;
+    env.require=envRequire;
+
+    env.__dirname=fsanchor.resolve("./","root");
+    env.global=env;
+
+    var incl=["console","Buffer","setTimeout","setInterval","clearTimeout","clearInterval","setImmediate","clearImmediate"];
+    for (var i in incl) {
+      var name=incl[i];
+      env[name]=global[name];
     }
-
-    var context=vm.createContext(env);
-
+    
     //run script
     try {
       localDomain.run(function() {
         vm.runInNewContext(script.scriptText,env,{
-          timeout:1000,
+          timeout:cg.system.request.items.sync_timeout,
           displayErrors:false,
           filename:"ScriptEnvironment"
         });
       });
+      delete required;
     } catch(e) {
+      delete required;
+
       scriptCb((new stat.states.items.script.CRASH({
         flow:"sync",
         error:e,
@@ -81,7 +107,7 @@ ScriptEnvironment.prototype.run=function(script,env,callback) {
       //give script time to finish async
       timerHandle=setTimeout(function() {
         scriptCb((new stat.states.items.script.TIMEOUT({flow:"async"})).toString());
-      }, 1000);
+      }, cg.system.request.items.async_timeout);
     }
   };
 

@@ -1,4 +1,5 @@
 stat=require("../../status.js");
+fs=require("fs");
 vm=require("vm");
 
 /**
@@ -13,7 +14,7 @@ Script=function() {
 Script.prototype.loadFile=function(file) {
   try {
     var file=file.replace(/"/g,"\\\""); //escape path to js-string
-    this.scriptText='require("'+file+'");';
+    this.scriptText=fs.readFileSync(file);
     this.script=vm.createScript(this.scriptText, 'script');
 
     return null;
