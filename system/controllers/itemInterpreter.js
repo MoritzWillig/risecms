@@ -157,22 +157,71 @@ itemInterpreter={
               }
             }
 
-            if (!isInline(id)) {
-              //parse as item
-              subItemCt++;
-              
-              //load sub item
-              root.itemStr[i]=new ItemLink(
-                itemInterpreter.create(id,false,subItemCallback),
-                addData,
-                {post:[script]}
-              );
-              
-              root.itemStr[i].item.parent=root;
+            if (addData!=undefined) {
+              if (isInline(addData)) {
+                //parse inline data
+                addData=addData.substr(1,addData.length);
+                try {
+                  addData=JSON.parse(addData);
+                  dataCb();
+                } catch(e) {
+                  root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
+                    action:"parsing JSON",
+                    error:e,
+                    errorStr:e.toString()
+                  });
+                  checkCallback(true);
+                  return;
+                }
+              } else {
+                //load inline data from item
+                itemInterpreter.create(addData,false,function(item) {
+                  if (!item.isValid()) {
+                    //data item has to be valid
+                    root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
+                      action:"loading data item - invalid item"
+                    });
+                    checkCallback(true);
+                    return;
+                  } else {
+                    //data item has to be from type "data"
+                    if (item.header.type=="data") {
+                      root.dataObjItem=item;
+                      root.dataObj=item.dataObj;
+                      dataCb();
+                    } else {
+                      root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
+                        action:"loading data item - item has to be from type data"
+                      });
+                      checkCallback(true);
+                      return;
+                    }
+                  }
+                },undefined);
+              }
             } else {
-              //as variable path - evaluated on compose
-              root.itemStr[i]=id.split(".");
-              root.itemStr[i][0]=root.itemStr[i][0].substr(1,root.itemStr[i][0].length); //removed leading $
+              //no inline data was given continue
+              dataCb();
+            }
+
+            function dataCb() {
+              if (!isInline(id)) {
+                //parse as item
+                subItemCt++;
+                
+                //load sub item
+                root.itemStr[i]=new ItemLink(
+                  itemInterpreter.create(id,false,subItemCallback),
+                  addData,
+                  {post:[script]}
+                );
+                
+                root.itemStr[i].item.parent=root;
+              } else {
+                //as variable path - evaluated on compose
+                root.itemStr[i]=id.split(".");
+                root.itemStr[i][0]=root.itemStr[i][0].substr(1,root.itemStr[i][0].length); //removed leading $
+              }
             }
           }
 
@@ -287,9 +336,7 @@ itemInterpreter={
           environment:environment
         },function(result) {
           callback(result);
-        });
-        //callback("%%%script%%%");      
-        //item.script.trigger("run",[item,callback]);
+        },((item.header.name!="")?item.header.name:(item.header.path)?item.header.path:"")+"["+item.header.id+"]");
         return;
       case "data":
         callback("%%%not implemented yet%%%");

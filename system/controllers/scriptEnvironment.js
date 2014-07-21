@@ -8,7 +8,7 @@ path=require("path");
 function ScriptEnvironment() {
 }
 
-ScriptEnvironment.prototype.run=function(script,env,callback) {
+ScriptEnvironment.prototype.run=function(script,env,callback,scriptName) {
     if (!env) { env={}; }
     //TODO: make scripts time out (introduced at node v0.11)
     
@@ -85,7 +85,7 @@ ScriptEnvironment.prototype.run=function(script,env,callback) {
         vm.runInNewContext(script.scriptText,env,{
           timeout:cg.system.request.items.sync_timeout,
           displayErrors:false,
-          filename:"ScriptEnvironment"
+          filename:"ScriptEnvironment"+(scriptName?":"+scriptName:"")
         });
       });
     } catch(e) {
