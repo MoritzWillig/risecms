@@ -252,22 +252,24 @@ itemInterpreter={
 
   /**
    * creates a string representing the item structure
-   * @param  {Item}   item     item to parse
+   * @param  {ItemLink}   itemLink     itemLink to parse
    * @param  {Function} callback callback to return if the item is composed
    * @param  {[[Item]]}   childs   chain of item childs (set from parent items)
    * @param  {bool}   asChild  whether or not this item is parsed as child
    * //@param  {[[ItemLink]]}   data     additional data scopes which can be accessed throughout parsing
-   * @param  {[Object]} global global data scope
+   * @param  {[Object]} environment environment data scope
    */
-  compose:function(item,callback,childs,asChild,global) {
+  compose:function(itemLink,callback,childs,asChild,environment) {
     if (typeof childs=="undefined") { childs=[]; }
     if (typeof asChild=="undefined") { asChild=false; }
-    if (typeof global=="undefined") { global={}; }
-    
+    if (typeof environment=="undefined") { environment={}; }
+    var item=itemLink.item;
+
     if ((!asChild) && (item.staticParent!=undefined)) {
       //compose parent - this item (if needed) will be composed again as child (=> asChild==true)
       childs.push(item);
-      itemInterpreter.compose(item.staticParent,callback,childs,false,global);
+      var link=new ItemLink(item.staticParent);
+      itemInterpreter.compose(link,callback,childs,false,environment);
       childs.pop();
     } else {
       //parse item normally
@@ -281,7 +283,8 @@ itemInterpreter={
       case "script":
         scriptEnv.run(item.script,{
           item:item,
-          global:global
+          data:itemLink.data,
+          environment:environment
         },function(result) {
           callback(result);
         });
@@ -312,10 +315,10 @@ itemInterpreter={
               var chLocal=childs.slice();
               chLocal.push(item);
 
-              itemInterpreter.compose(s.item,(function(i) { return function(itemStr) {
+              itemInterpreter.compose(s,(function(i) { return function(itemStr) {
                 cs[i]=itemStr;
                 itemCb();
-              }; })(i),chLocal,false,global);
+              }; })(i),chLocal,false,environment);
             } else {
               cs[i]=
                 s.item.statusHeader.toString()+"\n"+
@@ -330,7 +333,7 @@ itemInterpreter={
             /*
             child - data delivered from child
             data - inline or item data
-            global - global data object
+            environment - environment data object
             plugins - plugin specific data - planned - to be done
             */
             var v=s;
@@ -348,25 +351,31 @@ itemInterpreter={
                   var chLocal=childs.slice();
                   chLocal.pop();
                   
+                  var link=new ItemLink(childs[childs.length-1]);
                   itemInterpreter.compose(
-                    childs[childs.length-1],(function(i) { return function(itemStr) {
+                    link,(function(i) { return function(itemStr) {
                       cs[i]=itemStr;
                       itemCb();
                     }; })(i),
-                    chLocal,true,global
+                    chLocal,true,environment
                   );
                 }
                 break;
               case "data":
-                if (typeof item.dataObj[v[1]]!="undefined") {
-                  //read from local data scope
-                  r=item.dataObj;
+                //search inline data
+                if (typeof itemLink.data[v[1]]!="undefined") {
+                  r=itemLink.data;
                 } else {
-                  //search child tree
-                  for (var c=childs.length-1; c>=0; c--) {
-                    if (childs[c][v[1]]) {
-                      r=childs[c];
-                      break;
+                  if (typeof item.dataObj[v[1]]!="undefined") {
+                    //read from local data scope
+                    r=item.dataObj;
+                  } else {
+                    //search child tree
+                    for (var c=childs.length-1; c>=0; c--) {
+                      if (childs[c].dataObj[v[1]]) {
+                        r=childs[c].dataObj;
+                        break;
+                      }
                     }
                   }
                 }
@@ -378,7 +387,7 @@ itemInterpreter={
                 }
                 break;
               case "global":
-                r=global;
+                r=environment;
                 follow(r,v);
                 break;
               default:

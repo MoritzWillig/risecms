@@ -7,6 +7,7 @@ var stat=require("./status.js");
 var fsanchor=require("./fsanchor.js");
 
 var Item=require("./system/models/item.js");
+var ItemLink=require("./system/models/itemLink.js");
 var ItemInterpreter=require("./system/controllers/itemInterpreter.js");
 
 fsanchor.set("root"   ,"./");
@@ -99,42 +100,25 @@ plugins.setup(app,{
  * CMS routing
  */
 app.use('/', function(req, res) {
-  var global={
+  var environment={
     host:"http://"+cg.http.host+((cg.http.port==80)?"":(":"+cg.http.port)),
     title:"Test",
     req:req,
     res:res
   };
 
-  var evtObj={req:req,res:res,global:global};
+  var evtObj={req:req,res:res,environment:environment};
   plugins.trigger("page.pre",evtObj);
-
-  /*nitem.loadByPath(req.url,function(page,error) {
-    //if is object parse with parent or display error
-    if (stat.isSuccessfull(error)) {
-      console.log(page.data);
-      if (page.data.header.type=="data") {
-        page.item=JSON.stringify(page.item);
-      }
-    }
-
-
-    var httpRes=stat.toHTTP(page.item,error);
-
-    var evtObj={req:req,res:res,httpRes:httpRes,global:global};
-    plugins.trigger("page.post",evtObj);
-    res.send(evtObj.httpRes.code,evtObj.httpRes.data);
-  },{
-    global:global
-  });*/
   
   var pageItem=ItemInterpreter.create(req.url,true,function(item) {
     if (item.isValid()) {
-      //TODO: add page.preCompose
+      var evtObj={req:req,res:res,item:item,environment:environment};
+      plugins.trigger("page.preCompose",evtObj);
       
-      ItemInterpreter.compose(item,function(final) {
+      var link=new ItemLink(item);
+      ItemInterpreter.compose(link,function(final) {
         pagePost(200,final);
-      },undefined,undefined,global);
+      },undefined,undefined,environment);
     } else {
       if (item.hasHeaderErr()) {
         pagePost(404,"Error - "+item.statusHeader.toString());
@@ -144,14 +128,12 @@ app.use('/', function(req, res) {
     }
 
     function pagePost(code,pageStr) {
-      var evtObj={code:code,item:pageItem,page:pageStr,global:global};
-      //TODO: insert page.post
-      //plugins.trigger("page.post",evtObj);
-
+      var evtObj={req:req,res:res,code:code,item:item,page:pageStr,environment:environment};
+      plugins.trigger("page.post",evtObj);
       res.send(evtObj.code,evtObj.page);
     }
         
-  },global);
+  },environment);
 });
 
 app.use(function(err,req,res) {
@@ -168,19 +150,29 @@ var server = app.listen(cg.http.port, cg.http.host, function() {
    * @event page.pre
    * @param {Request} req http request
    * @param {Response} res http response
-   * @param {Object} global global param object
+   * @param {Object} environment environment param object
    */
   plugins.registerEvent("page.pre");
+  /**
+   * @event page.preCompose
+   * @param {Request} req http request
+   * @param {Response} pes http response
+   * @param {Item} item item to be composed and send
+   * @param {Object} environment environment param object
+   */
+  plugins.registerEvent("page.preCompose");
   /**
    * @event page.post
    * @param {Request} req http request
    * @param {Response} res http response
-   * @param {HttpRes} httpRes result to be send
-   * @param {Object} global global param object
+   * @param {int} code http status code
+   * @param {String} page composed item string 
+   * @param {Object} environment environment param object
    */
   plugins.registerEvent("page.post");
   /**
    * @event request.pre
+   * @todo is not triggered
    * @param {Request} req http request
    * @param {Response} res http response
    */

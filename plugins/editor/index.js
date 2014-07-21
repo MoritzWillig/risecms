@@ -11,30 +11,30 @@ var sourceTracker={
     if (!checkRights(user)) { return; }
 
     var debCrNew="riseCMSEditCrNew=";
-    if (data.httpRes.code==404) {
+    if (data.code==404) {
       //add code for new page
-      debCrNew+='"'+data.global.req.url+'";';
+      debCrNew+='"'+data.environment.req.url+'";';
     } else {
       debCrNew+='false';
     }
     debCrNew="<script>"+debCrNew+"</script>";
 
-    var debJqrTag='<script src="'+data.global.host+'/content/plugins/editor/js/libs/jQuery_v1.11.1.js"></script>'
-    var debSrcTag='<script src="'+data.global.host+'/content/plugins/editor/js/debug.js"></script>';
-    var debCssTag='<link rel="stylesheet" type="text/css" href="'+data.global.host+'/content/plugins/editor/css/debug.css">';
-    var debAncTag='<script>riseCMSHost="'+data.global.host+'";</script>';
-    var debEdtTag='<script src="'+data.global.host+'/content/plugins/editor/js/libs/ace-builds/src-noconflict/ace.js"></script>';
+    var debJqrTag='<script src="'+data.environment.host+'/content/plugins/editor/js/libs/jQuery_v1.11.1.js"></script>'
+    var debSrcTag='<script src="'+data.environment.host+'/content/plugins/editor/js/debug.js"></script>';
+    var debCssTag='<link rel="stylesheet" type="text/css" href="'+data.environment.host+'/content/plugins/editor/css/debug.css">';
+    var debAncTag='<script>riseCMSHost="'+data.environment.host+'";</script>';
+    var debEdtTag='<script src="'+data.environment.host+'/content/plugins/editor/js/libs/ace-builds/src-noconflict/ace.js"></script>';
     var debTag=debJqrTag+"\n"+debAncTag+"\n"+debCrNew+"\n"+debEdtTag+"\n"+debSrcTag+"\n"+debCssTag+"\n";
     //find head tag
-    var res=data.httpRes.data.replace(/<\/head>/i,debTag+"</head>");
-    if (res.length!=data.httpRes.data) {
+    var res=data.page.replace(/<\/head>/i,debTag+"</head>");
+    if (res.length!=data.page) {
       //no header found, append script to end
       res+=debTag;
     }
-    data.httpRes.data=res;
+    data.page=res;
   },
   addStrTrace:function(event,data) {
-    var user=data.addData.global.req.user;
+    var user=data.addData.environment.req.user;
     if (!checkRights(user)) { return; }
 
     var dataTag=((data.addData.data)&&(typeof data.addData.data._debugId!="undefined"))?
@@ -55,7 +55,7 @@ var sourceTracker={
     //"\n<div class='riseCMSDebug' data-tag='close' data-id='"+id+"'></div>\n",
   },
   addDataTrace:function(event,data) {
-    var user=data.addData.global.req.user;
+    var user=data.addData.environment.req.user;
     if (!checkRights(user)) { return; }
 
     data.data._debugId=data.id;

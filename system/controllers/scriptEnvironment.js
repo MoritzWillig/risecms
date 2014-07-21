@@ -88,10 +88,7 @@ ScriptEnvironment.prototype.run=function(script,env,callback) {
           filename:"ScriptEnvironment"
         });
       });
-      delete required;
     } catch(e) {
-      delete required;
-
       scriptCb((new stat.states.items.script.CRASH({
         flow:"sync",
         error:e,
