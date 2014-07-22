@@ -4,6 +4,7 @@ vm=require("vm");
 domain=require("domain");
 fsanchor=require("../../fsanchor.js");
 path=require("path");
+glModule=require("module");
 
 function ScriptEnvironment() {
 }
@@ -55,17 +56,23 @@ ScriptEnvironment.prototype.run=function(script,env,callback,scriptName) {
     var envRequire=function(name) {
       name=resolveModule(name);
 
-      if (!required[name]) {
-        //exchange cache 
-        var c=require.cache;
-        require.cache=envRequire.cache;
-        
-        required[name]=require(name);
-        
-        require.cache=c;
-      }
+      //exchange cache 
+      var c=require.cache;
+      //require.cache is a pointer to Module._cache, require internally looks up names over the Module._cache
+      //reference so we have to replace the cache object there (we are replacing require.cache too, in case 
+      //the nodejs code will change)
+      require.cache=envRequire.cache;
+      glModule._cache=envRequire.cache;
+
+      localDomain.enter();
+      var req=require(name);
+      localDomain.exit();
+
+      //put normal cache back
+      require.cache=c;
+      glModule._cache=c;
       
-      return required[name];
+      return req;
     };
     envRequire.cache=required;
     env.require=envRequire;
