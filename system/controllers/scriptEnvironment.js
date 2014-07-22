@@ -6,6 +6,13 @@ fsanchor=require("../../fsanchor.js");
 path=require("path");
 glModule=require("module");
 
+/**
+ * Includes code and runs it in the current context.
+ * Since it is currently impossible to completely sandbox code
+ * without outsourcing it to a new processes it is currently run in the main process itself. Some 
+ * exception handling is done (especially for sync code). For async functions, the code has to 
+ * handle exceptions itself, to prevent the app from crashing.
+ */
 function ScriptEnvironment() {
 }
 
@@ -34,6 +41,7 @@ ScriptEnvironment.prototype.run=function(script,env,callback,scriptName) {
       }
     }
 
+    //try to catch as many errors as possible (fails ie. for sql callback)
     var localDomain=domain.create();
     localDomain.on("error",function() {
       scriptCb((new stat.states.items.script.CRASH({
@@ -48,13 +56,15 @@ ScriptEnvironment.prototype.run=function(script,env,callback,scriptName) {
     env.module={};
     env.module.callback=scriptCb;
     
-    var required={};
     var resolveModule=function(module) {
       if (module.charAt(0)!=='.') { return module; }
       return fsanchor.resolve(module,"root"); //scripts paths are relative to risecms root
-    };
-    var envRequire=function(name) {
+    }
+    /*
+    var required={};
+    var envRequire=function(name) { var oN=name;
       name=resolveModule(name);
+      console.log(oN,"was resolved to",name);
 
       //exchange cache 
       var c=require.cache;
@@ -76,14 +86,23 @@ ScriptEnvironment.prototype.run=function(script,env,callback,scriptName) {
     };
     envRequire.cache=required;
     env.require=envRequire;
+    */
+    env.require=function(name) {
+      return require(resolveModule(name));
+    }
 
     env.__dirname=fsanchor.resolve("./","root");
     env.global=env;
 
+    /*
     var incl=["console","Buffer","setTimeout","setInterval","clearTimeout","clearInterval","setImmediate","clearImmediate"];
     for (var i in incl) {
       var name=incl[i];
       env[name]=global[name];
+    }
+    */
+    for (var i in global) {
+      env[i]=global[i];
     }
     
     //run script
