@@ -3,8 +3,9 @@ Script=require("../models/script.js");
 ItemLink=require("../models/itemLink.js");
 findParenthesis=require("../helpers/parenthesis.js").findParenthesis;
 findNSurr=require("../helpers/parenthesis.js").findNSurr;
-
 scriptEnv=new (require("./scriptEnvironment.js"))();
+
+plugins=require("./pluginHandler.js");
 
 
 itemInterpreter={
@@ -186,8 +187,7 @@ itemInterpreter={
                   } else {
                     //data item has to be from type "data"
                     if (item.header.type=="data") {
-                      root.dataObjItem=item;
-                      root.dataObj=item.dataObj;
+                      addData=item.dataObj;
                       dataCb();
                     } else {
                       root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
@@ -502,11 +502,36 @@ itemInterpreter={
             
             //TODO: CALL ITEM SCRIPT
           }
-          callback(final);
+
+          var evtObj={final:final,itemLink:itemLink,childs:childs,asChild:asChild,environment:environment};
+          plugins.trigger("item.compose.post",evtObj);
+
+          callback(evtObj.final);
         }
       }
     }
   }
 };
+
+(function registerEvents() {
+  /**
+   * @event item.compose.pre
+   * @param {ItemLink} itemLink item link to be composed
+   * @param {[Item]} childs array of childs
+   * @param {bool} asChild wether or not the item link is parsed as a child
+   * @param {object} environment additional data passed for composing
+   */
+  plugins.registerEvent("item.compose.pre");
+  /**
+   * @event item.compose.post
+   * @param {sting} final the parsed string which will be returned
+   * @param {ItemLink} itemLink item link to be composed
+   * @param {[Item]} childs array of childs
+   * @param {bool} asChild wether or not the item link is parsed as a child
+   * @param {object} environment additional data passed for composing
+   */
+  plugins.registerEvent("item.compose.post");
+})();
+
 
 module.exports=itemInterpreter;

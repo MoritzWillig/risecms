@@ -34,7 +34,6 @@ Item.prototype.dataScope={};
 
 Item.prototype.itemStr=[]; //[string/Item]
 Item.prototype.dataObj=undefined; //object
-Item.prototype.dataObjItem=undefined; //object - set if dataObj was loaded from an item
 Item.prototype.script=undefined; //Script object
 
 Item.prototype.parent=undefined; //parent including this item
@@ -125,6 +124,5 @@ Item.prototype.loadFile=function(callback) {
     callback.apply(self,[self]);
   });
 }
-
 
 module.exports=Item;

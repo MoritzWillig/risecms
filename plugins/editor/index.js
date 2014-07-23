@@ -4,6 +4,7 @@ fs=require("fs");
 pageItem=require("../../system/models/pageitem.js");
 cg=require("../../config.js");
 rdrec=require("../../modules/readDirRecursive");
+User=require("../../system/models/user.js");
 
 var sourceTracker={
   insertDebugScript:function(event,data) {
@@ -27,38 +28,33 @@ var sourceTracker={
     var debTag=debJqrTag+"\n"+debAncTag+"\n"+debCrNew+"\n"+debEdtTag+"\n"+debSrcTag+"\n"+debCssTag+"\n";
     //find head tag
     var res=data.page.replace(/<\/head>/i,debTag+"</head>");
-    if (res.length!=data.page) {
+    if (res.length==data.page.length) {
       //no header found, append script to end
       res+=debTag;
     }
     data.page=res;
   },
-  addStrTrace:function(event,data) {
-    var user=data.addData.environment.req.user;
+
+  addItemTrace:function(event,data) {
+    var user=data.environment.req?data.environment.req.user:new User();
     if (!checkRights(user)) { return; }
 
-    var dataTag=((data.addData.data)&&(typeof data.addData.data._debugId!="undefined"))?
-      "data-dataId='"+(data.addData.data._debugId)+"'":
-      "";
+    var link=data.itemLink;
+    var item=data.itemLink.item;
+    var dataTag=((link.dataObj))?"data-dataId='"+(link.dataObj.header.id)+"'":"";
     
-    data.string=
+    data.final=
       "\n<span class='riseCMSDebug' \
       data-tag='tag' \
-      data-id='"+data.id+"' \
-      data-name='"+data.addData.header.name+"' \
-      data-type='"+data.addData.header.type+"' \
+      data-id='"+item.header.id+"' \
+      data-name='"+item.header.name+"' \
+      data-type='"+item.header.type+"' \
       "+dataTag+">\n"
-      +data.string+
+      +data.final+
       "\n</span>\n";
     
     //"\n<div class='riseCMSDebug' data-tag='open'  data-id='"+id+"'></div>\n"
     //"\n<div class='riseCMSDebug' data-tag='close' data-id='"+id+"'></div>\n",
-  },
-  addDataTrace:function(event,data) {
-    var user=data.addData.environment.req.user;
-    if (!checkRights(user)) { return; }
-
-    data.data._debugId=data.id;
   }
 };
 
@@ -73,9 +69,7 @@ function checkRights(user) {
 
 function editorInit(pluginHandler) {
   pluginHandler.on("page.post",sourceTracker.insertDebugScript);
-
-  pluginHandler.on("itemStr.post",sourceTracker.addStrTrace);
-  pluginHandler.on("itemData.post",sourceTracker.addDataTrace);
+  pluginHandler.on("item.compose.post",sourceTracker.addItemTrace);
   
   pluginHandler.registerRoute("plugins","/editor/",function(req,res,next) {
     if (checkRights(req.user)) {
