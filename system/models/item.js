@@ -14,8 +14,13 @@ function checkNumber(x) {
 }
 
 function Item(id,asPath) {
-  this.id=id;
-  this.idType=(asPath==true)?"path":(checkNumber(id))?"id":"name";
+  if (id!=undefined) {
+    this.id=id;
+    this.idType=(asPath==true)?"path":(checkNumber(id))?"id":"name";
+  } else {
+    this.id=undefined;
+    this.idType="string";
+  }
 
   this.statusHeader=new stat.states.items.NOT_LOADED();
   this.statusFile=new stat.states.items.NOT_LOADED();
@@ -80,17 +85,36 @@ Item.prototype.loadHeader=function(callback) {
     case "name":
       this._fromName(cb);
       break;
+    case "string":
+      this.statusHeader=new stat.states.items.HAS_NO_HEADER({"idType":this.idType});
+      callback.apply(this,[this]);
+      break;
   }
 }
 
+/**
+ * queries the item header by id
+ * @private
+ * @param  {Function} callback callback to return the result
+ */
 Item.prototype._fromId=function(callback) {
   var query=db.query('SELECT * FROM ?? WHERE id=?',[cg.database.pageTable,this.id],callback);
 }
 
+/**
+ * queries the item header by name
+ * @private
+ * @param  {Function} callback callback to return the result
+ */
 Item.prototype._fromName=function(callback) {
   var query=db.query('SELECT * FROM ?? WHERE name=?',[cg.database.pageTable,this.id],callback);
 }
 
+/**
+ * queries the item header by path
+ * @private
+ * @param  {Function} callback callback to return the result
+ */
 Item.prototype._fromPath=function(callback) {
   var query=db.query('SELECT * FROM ?? WHERE path=?',[cg.database.pageTable,this.id],callback);
 }
@@ -123,6 +147,17 @@ Item.prototype.loadFile=function(callback) {
     }
     callback.apply(self,[self]);
   });
+}
+
+Item.prototype.loadString=function(str,type,name,callback) {
+  this.id=name;
+  this.header={type:type};
+  this.idType="string";
+
+  this.file=str;
+  this.statusFile=new stat.states.items.FILE_LOADED();
+
+  callback.apply(this,[this]);
 }
 
 module.exports=Item;

@@ -107,6 +107,7 @@ status.states={ //tree hirachy of status codes
     HEADER_LOADED: status.proto.item.success.derive(502,"Item header was loaded"),
     FILE_LOADED:  status.proto.item.success.derive(503,"Item file was loaded"),
     INVALID_ID: Status.derive(504,"The id to be loaded was invalid"),
+    HAS_NO_HEADER: Status.derive(505,"The given item type does not have a header"),
     
     UNKNOWN_VARIABLE_ROOT: Status.derive(506,"The variable root can not be found"),
     UNKNOWN_VARIABLE: Status.derive(507,"The variable does not exist"),

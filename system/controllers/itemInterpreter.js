@@ -9,285 +9,297 @@ plugins=require("./pluginHandler.js");
 
 
 itemInterpreter={
+  /**
+   * loads an item from a given id
+   * @param  {string/int}   id       id, name or path of item
+   * @param  {bool}   asPath   whether or not the item id is interpreted as a path
+   * @param  {Function} callback callback to be called when the item is loaded
+   * @param  {*}   data          additional data to be attached to the item
+   */
   create:function(id,asPath,callback,data) { console.log("loading",id);
-    if (typeof callback=="undefined") { callback=function() {}; }
-
+    if (callback==undefined) { callback=function() {}; }
+    
     var root=new Item(id,asPath);
     root.loadHeader(cbInterpret);
-    
-    var itemLoaded=false;
-    var parentLoaded=false;
 
     function cbInterpret() {
       if (!root.isValid()) {
-        //we did not get a header to determine if a parent exists
-        parentLoaded=true;
-        checkCallback(true);
+        callback(root);
         return;
       }
 
       id=root.header.id;
-      switch (root.header.type) {
-        case "static":
-          root.loadFile(cbFile(interpretStatic));
-          break;
-        case "text":
-          root.loadFile(cbFile(interpretText));
-          break;
-        case "script":
-          cbFile(interpretScript)();
-          break;
-        case "data":
-          root.loadFile(cbFile(interpretData));
-          break;
-        default:
-          root.statusHeader=new stat.states.items.UNKNOWN_RESOURCE_TYPE();
-          checkCallback(true);
-          break;
-      }
+      
+      //reset item
+      root.itemStr=[]
+      root.dataObj=undefined;
+      
+      root.loadFile(cbFile);
 
-      function cbFile(next) {
-        root.itemStr=[]
-        root.dataObj=undefined;
-
-        return function(item) {
-          if (!root.isValid()) {
-            checkCallback(true);
-            return;
-          }
-
-          next();
-        };
-      }
-
-      function interpretText() {
-        root.itemStr=[root.file];
-        checkCallback(true);
-      }
-
-      function interpretStatic() {
-        var str=root.file;
-        
-        //extract subitem strings
-        var lastItemEnd=0;
-        var res=findParenthesis(str,"{{","}}","\\",lastItemEnd);
-        while ((!(res<0)) && (
-          !((res[0]==-1) && (res[1]==-1)))) {
-          //save plain text which does not contain item information
-          var nItemStr=str.substr(lastItemEnd,res[0]-lastItemEnd);
-          if (nItemStr!="") {
-            root.itemStr.push(nItemStr);
-          }
-          lastItemEnd=res[1];
-
-          var si={
-            range:res,
-            str:str.substr(res[0]+"{{".length,res[1]-res[0]-"{{".length-"}}".length)
-          };
-          root.itemStr.push(si);
-          
-          res=findParenthesis(str,"{{","}}","\\",lastItemEnd);
+      function cbFile(item) {
+        if (!root.isValid()) {
+          callback(root);
+          return;
         }
+
+        itemInterpreter.parse(root,callback);
+      }
+    }
+
+    return root;
+  },
+
+  parse:function(root,callback) {
+    var itemLoaded=false;
+    var parentLoaded=false;
+
+    switch (root.header.type) {
+    case "static":
+      interpretStatic();
+      break;
+    case "text":
+      interpretText();
+      break;
+    case "script":
+      interpretScript();
+      break;
+    case "data":
+      interpretData();
+      break;
+    default:
+      root.statusHeader=new stat.states.items.UNKNOWN_RESOURCE_TYPE();
+      checkCallback(true);
+      break;
+    }
+
+    function interpretText() {
+      root.itemStr=[root.file];
+      checkCallback(true);
+    }
+
+    function interpretStatic() {
+      var str=root.file;
+      
+      //extract subitem strings
+      var lastItemEnd=0;
+      var res=findParenthesis(str,"{{","}}","\\",lastItemEnd);
+      while ((!(res<0)) && (
+        !((res[0]==-1) && (res[1]==-1)))) {
+        //save plain text which does not contain item information
+        var nItemStr=str.substr(lastItemEnd,res[0]-lastItemEnd);
+        if (nItemStr!="") {
+          root.itemStr.push(nItemStr);
+        }
+        lastItemEnd=res[1];
+
+        var si={
+          range:res,
+          str:str.substr(res[0]+"{{".length,res[1]-res[0]-"{{".length-"}}".length)
+        };
+        root.itemStr.push(si);
         
-        if (res<0) {
-          var idx=-(res-1);
-          var sub=str.substr(idx,10);
-          root.statusFile=new stat.states.static.MISMATCHING_PARENTHESIS({position:idx,substr:sub});
-          checkCallback(true);
-        } else {
-          //save last plain text which does not contain item information
-          var nItemStr=str.substr(lastItemEnd,str.length);
-          if (nItemStr!="") {
-            root.itemStr.push(nItemStr);
+        res=findParenthesis(str,"{{","}}","\\",lastItemEnd);
+      }
+      
+      if (res<0) {
+        var idx=-(res-1);
+        var sub=str.substr(idx,10);
+        root.statusFile=new stat.states.static.MISMATCHING_PARENTHESIS({position:idx,substr:sub});
+        checkCallback(true);
+      } else {
+        //save last plain text which does not contain item information
+        var nItemStr=str.substr(lastItemEnd,str.length);
+        if (nItemStr!="") {
+          root.itemStr.push(nItemStr);
+        }
+
+        
+        //split and parse subitem strings
+        var subItemCt=1;
+        for (var i=0; i<root.itemStr.length; i++) {
+          if (typeof root.itemStr[i]=="string") {
+            //skip plaintext
+            continue;
+          }
+          var s=root.itemStr[i].str;
+          var last=0;
+          
+          var id="";
+          var addData=undefined;
+          var script=undefined;
+
+          //extract name
+          var idx=s.indexOf("|",0);
+          if (idx!=-1) {
+            id=s.substr(last,idx);
+            s=s.substr(idx+1,s.length);
+            
+            last=idx+1;
+          } else {
+            id=s;
+            last=s.length;
+            s="";
           }
 
-          
-          //split and parse subitem strings
-          var subItemCt=1;
-          for (var i=0; i<root.itemStr.length; i++) {
-            if (typeof root.itemStr[i]=="string") {
-              //skip plaintext
-              continue;
-            }
-            var s=root.itemStr[i].str;
-            var last=0;
-            
-            var id="";
-            var addData=undefined;
-            var script=undefined;
-
-            //extract name
-            var idx=s.indexOf("|",0);
+          //extract data
+          if (s.length!=0) {
+            idx=findNSurr(s,"|",0,"\"");
             if (idx!=-1) {
-              id=s.substr(last,idx);
+              addData=s.substr(last,idx);
               s=s.substr(idx+1,s.length);
-              
-              last=idx+1;
             } else {
-              id=s;
-              last=s.length;
+              addData=s;
               s="";
             }
+          }
 
-            //extract data
-            if (s.length!=0) {
-              idx=findNSurr(s,"|",0,"\"");
-              if (idx!=-1) {
-                addData=s.substr(last,idx);
-                s=s.substr(idx+1,s.length);
-              } else {
-                addData=s;
-                s="";
-              }
+          //extract script
+          if (s.length!=0) {
+            script=new Script();
+            var e=script.loadText(s);
+            if (e!=null) {
+              //throw error
+              root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
+                action:"parsing inline script",
+                exp:s,
+                error:e,
+                errorStr:e.toString()
+              });
+              checkCallback(true);
+              return;
             }
+          }
 
-            //extract script
-            if (s.length!=0) {
-              script=new Script();
-              var e=script.loadText(s);
-              if (e!=null) {
-                //throw error
+          if (addData!=undefined) {
+            if (isInline(addData)) {
+              //parse inline data
+              addData=addData.substr(1,addData.length);
+              try {
+                addData=JSON.parse(addData);
+                dataCb();
+              } catch(e) {
                 root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
-                  action:"parsing inline script",
-                  exp:s,
+                  action:"parsing JSON",
                   error:e,
                   errorStr:e.toString()
                 });
                 checkCallback(true);
                 return;
               }
-            }
-
-            if (addData!=undefined) {
-              if (isInline(addData)) {
-                //parse inline data
-                addData=addData.substr(1,addData.length);
-                try {
-                  addData=JSON.parse(addData);
-                  dataCb();
-                } catch(e) {
+            } else {
+              //load inline data from item
+              itemInterpreter.create(addData,false,function(item) {
+                if (!item.isValid()) {
+                  //data item has to be valid
                   root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
-                    action:"parsing JSON",
-                    error:e,
-                    errorStr:e.toString()
+                    action:"loading data item - invalid item"
                   });
                   checkCallback(true);
                   return;
-                }
-              } else {
-                //load inline data from item
-                itemInterpreter.create(addData,false,function(item) {
-                  if (!item.isValid()) {
-                    //data item has to be valid
+                } else {
+                  //data item has to be from type "data"
+                  if (item.header.type=="data") {
+                    addData=item.dataObj;
+                    dataCb();
+                  } else {
                     root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
-                      action:"loading data item - invalid item"
+                      action:"loading data item - item has to be from type data"
                     });
                     checkCallback(true);
                     return;
-                  } else {
-                    //data item has to be from type "data"
-                    if (item.header.type=="data") {
-                      addData=item.dataObj;
-                      dataCb();
-                    } else {
-                      root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
-                        action:"loading data item - item has to be from type data"
-                      });
-                      checkCallback(true);
-                      return;
-                    }
                   }
-                },undefined);
-              }
+                }
+              },undefined);
+            }
+          } else {
+            //no inline data was given continue
+            dataCb();
+          }
+
+          function dataCb() {
+            if (!isInline(id)) {
+              //parse as item
+              subItemCt++;
+              
+              //load sub item
+              root.itemStr[i]=new ItemLink(
+                itemInterpreter.create(id,false,subItemCallback),
+                addData,
+                {post:[script]}
+              );
+              
+              root.itemStr[i].item.parent=root;
             } else {
-              //no inline data was given continue
-              dataCb();
-            }
-
-            function dataCb() {
-              if (!isInline(id)) {
-                //parse as item
-                subItemCt++;
-                
-                //load sub item
-                root.itemStr[i]=new ItemLink(
-                  itemInterpreter.create(id,false,subItemCallback),
-                  addData,
-                  {post:[script]}
-                );
-                
-                root.itemStr[i].item.parent=root;
-              } else {
-                //as variable path - evaluated on compose
-                root.itemStr[i]=id.split(".");
-                root.itemStr[i][0]=root.itemStr[i][0].substr(1,root.itemStr[i][0].length); //removed leading $
-              }
+              //as variable path - evaluated on compose
+              root.itemStr[i]=id.split(".");
+              root.itemStr[i][0]=root.itemStr[i][0].substr(1,root.itemStr[i][0].length); //removed leading $
             }
           }
+        }
 
-          //check if all items are already loaded - use this with itemCt=1 
-          //to prevent syncronous callbacks to return before the subItem.script could be set
-          subItemCallback(undefined);
-          
-          function isInline(str) { return ((str.length>0) && (str[0]=="$")); }
-          function extractData(str) {
-            if (isInline(str)) {
-              return s.substr(1,str.length);
-            } else {
-              return str;
-            }
+        //check if all items are already loaded - use this with itemCt=1 
+        //to prevent syncronous callbacks to return before the subItem.script could be set
+        subItemCallback(undefined);
+        
+        function isInline(str) { return ((str.length>0) && (str[0]=="$")); }
+        function extractData(str) {
+          if (isInline(str)) {
+            return s.substr(1,str.length);
+          } else {
+            return str;
           }
+        }
 
-          function subItemCallback(subItem) {
-            subItemCt--;
-            //if all sub items are loaded return
-            if (subItemCt==0) {
-              checkCallback(true);
-            }
+        function subItemCallback(subItem) {
+          subItemCt--;
+          //if all sub items are loaded return
+          if (subItemCt==0) {
+            checkCallback(true);
           }
-
         }
-      }
 
-      function interpretScript() {
-        var path=root.resolveIdPath();
-        var script=new Script();
-        var e=script.loadFile(path);
-        if (e!=null) {
-          root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
-            action:"parsing script",
-            error:e,
-            errorStr:e.toString()
-          });
-        } else {
-          root.script=script;
-        }
-        checkCallback(true);
-      }
-
-      function interpretData() {
-        try {
-          root.dataObj=JSON.parse(data);
-          root.statusFile=new stat.states.items.OK();
-        } catch(e) {
-          root.statusFile=new stat.states.items.INVALID_ITEM_FILE({action:"parsing file as json"});
-        }
-        checkCallback(true);
-      }
-
-      //load parent
-      var parentName=root.header.parent;
-      if (parentName!="") {
-        var parent=itemInterpreter.create(parentName,false,function() {
-          parentLoaded=true;
-          checkCallback();
-        },undefined);
-        root.staticParent=parent;
-      } else {
-        parentLoaded=true;
-        checkCallback();
       }
     }
+
+    function interpretScript() {
+      var path=root.resolveIdPath();
+      var script=new Script();
+      var e=script.loadFile(path);
+      if (e!=null) {
+        root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
+          action:"parsing script",
+          error:e,
+          errorStr:e.toString()
+        });
+      } else {
+        root.script=script;
+      }
+      checkCallback(true);
+    }
+
+    function interpretData() {
+      try {
+        root.dataObj=JSON.parse(data);
+        root.statusFile=new stat.states.items.OK();
+      } catch(e) {
+        root.statusFile=new stat.states.items.INVALID_ITEM_FILE({action:"parsing file as json"});
+      }
+      checkCallback(true);
+    }
+
+    //load parent
+    var parentName=root.header.parent;
+    if (parentName!="") {
+      var parent=itemInterpreter.create(parentName,false,function() {
+        parentLoaded=true;
+        checkCallback();
+      },undefined);
+      root.staticParent=parent;
+    } else {
+      parentLoaded=true;
+      checkCallback();
+    }
+
 
     function checkCallback(addItemLoaded) {
       if (addItemLoaded==true) { itemLoaded=true; }
