@@ -58,6 +58,7 @@ Status.derive=function(code,description) {
 status={
   codes:{}, //list of codes codes[status.code]
   states:{},
+  Status:Status,
 
   isSuccessfull:function(status) {
     var res=(
@@ -95,7 +96,7 @@ status.proto.item.success=status.proto.item.valid.derive(undefined,"success item
 
 status.states={ //tree hirachy of status codes
   items:{
-    OK: Status.derive(200,"OK"),
+    OK: status.proto.item.valid.derive(200,"OK"),
     INVALID_PARENT: Status.derive(403,"An data item can not be used as parent"),
     NOT_FOUND: Status.derive(404,"Not Found - The item does not exist"),
     NO_FILE: Status.derive(406,"Not found - The file for the item was not found"),

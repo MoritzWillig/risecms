@@ -4,15 +4,43 @@ Item=require("./item.js");
 function ItemLink(item,data,modifiers) {
   this.item=item;
   
-  if (data instanceof Item) {
-    this.data=data;
-    this.dataItem=data.dataObj;
-  } else {
-    this.data=(typeof data != "undefined")?data:{};
-  }
+  this.setData(data);
 
   if (typeof modifiers!="undefined") {
     this.modifiers=modifiers;
+  }
+}
+
+ItemLink.prototype.isValid=function() {
+  return ((this.item.isValid()) && ((this.dataItem==undefined) || (this.dataItem.isValid())));
+}
+
+ItemLink.prototype.getStatusString=function(printValid) {
+  var str="";
+  if ((!this.item.isValid()) || printValid) {
+    str+=this.item.getStatusString(printValid);
+  }
+
+  if (this.dataItem) {
+    if ((!this.dataItem.isValid()) || printValid) {
+      str+=this.dataItem.getStatusString(printValid);
+    }
+  } else {
+    if (printValid) {
+      str+="no data item";
+    }
+  }
+
+  return str;
+}
+
+ItemLink.prototype.setData=function(data) {
+  if (data instanceof Item) {
+    this.data=data.dataObj;
+    this.dataItem=data;
+  } else {
+    this.data=(typeof data != "undefined")?data:{};
+    this.dataItem=undefined;
   }
 }
 

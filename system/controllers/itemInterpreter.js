@@ -14,9 +14,9 @@ itemInterpreter={
    * @param  {string/int}   id       id, name or path of item
    * @param  {bool}   asPath   whether or not the item id is interpreted as a path
    * @param  {Function} callback callback to be called when the item is loaded
-   * @param  {*}   data          additional data to be attached to the item
+   * @return {Item} returns the item object (the item does not need to be loaded at this point)
    */
-  create:function(id,asPath,callback,data) { console.log("loading",id);
+  create:function(id,asPath,callback) { console.log("loading",id);
     if (callback==undefined) { callback=function() {}; }
     
     var root=new Item(id,asPath);
@@ -49,6 +49,12 @@ itemInterpreter={
     return root;
   },
 
+  /**
+   * parses the file attribute of an item
+   * @param  {item}   root     item to be parsed
+   * @param  {Function} callback callback to be called when the item is loaded
+   * @return {Item} returns the item object (the item does not need to be loaded at this point)
+   */
   parse:function(root,callback) {
     var itemLoaded=false;
     var parentLoaded=false;
@@ -178,61 +184,58 @@ itemInterpreter={
                 addData=JSON.parse(addData);
                 dataCb();
               } catch(e) {
-                root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
-                  action:"parsing JSON",
+                addData=newItem();
+                addData.statusFile=new stat.states.items.INVALID_ITEM_FILE({
+                  action:"parsing inline JSON",
                   error:e,
                   errorStr:e.toString()
                 });
-                checkCallback(true);
-                return;
+                dataCb();
               }
             } else {
               //load inline data from item
-              itemInterpreter.create(addData,false,function(item) {
+              subItemCt++;
+              itemInterpreter.create(addData,false,(function(i,id,script) { return function(item) {
+                subItemCt--;
                 if (!item.isValid()) {
                   //data item has to be valid
-                  root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
-                    action:"loading data item - invalid item"
-                  });
-                  checkCallback(true);
-                  return;
+                  addData=item;
                 } else {
                   //data item has to be from type "data"
                   if (item.header.type=="data") {
                     addData=item.dataObj;
-                    dataCb();
                   } else {
-                    root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
-                      action:"loading data item - item has to be from type data"
+                    addData=new stat.states.items.INVALID_ITEM_FILE({
+                      action:"loading data item - item has to be of type data",
                     });
-                    checkCallback(true);
-                    return;
                   }
                 }
-              },undefined);
+                dataCb(i,id,addData,script);
+              }; })(i,id,script),undefined);
             }
           } else {
             //no inline data was given continue
             dataCb();
           }
 
-          function dataCb() {
-            if (!isInline(id)) {
+          function dataCb(ai,aid,aaddData,ascript) {
+            if (ai==undefined) { ai=i; aid=id; aaddData=addData; ascript=script; } //take vars from params if call is async
+            if (!isInline(aid)) {
               //parse as item
               subItemCt++;
               
               //load sub item
-              root.itemStr[i]=new ItemLink(
-                itemInterpreter.create(id,false,subItemCallback),
-                addData,
-                {post:[script]}
+              root.itemStr[ai]=new ItemLink(
+                itemInterpreter.create(aid,false,subItemCallback),
+                aaddData,
+                {post:[ascript]}
               );
               
-              root.itemStr[i].item.parent=root;
+              root.itemStr[ai].item.parent=root;
             } else {
               //as variable path - evaluated on compose
-              root.itemStr[i]=id.split(".");
-              root.itemStr[i][0]=root.itemStr[i][0].substr(1,root.itemStr[i][0].length); //removed leading $
+              root.itemStr[ai]=aid.split(".");
+              root.itemStr[ai][0]=root.itemStr[ai][0].substr(1,root.itemStr[ai][0].length); //removed leading $
             }
           }
         }
@@ -279,8 +282,7 @@ itemInterpreter={
 
     function interpretData() {
       try {
-        root.dataObj=JSON.parse(data);
-        root.statusFile=new stat.states.items.OK();
+        root.dataObj=JSON.parse(root.file);
       } catch(e) {
         root.statusFile=new stat.states.items.INVALID_ITEM_FILE({action:"parsing file as json"});
       }
@@ -328,12 +330,17 @@ itemInterpreter={
 
     if ((!asChild) && (item.staticParent!=undefined)) {
       //compose parent - this item (if needed) will be composed again as child (=> asChild==true)
-      childs.push(item);
+      childs.push(itemLink);
       var link=new ItemLink(item.staticParent);
       itemInterpreter.compose(link,callback,childs,false,environment);
       childs.pop();
     } else {
       //parse item normally
+      
+      if (!itemLink.isValid()) {
+        callback(itemLink.getStatusString());
+        return;
+      }
       
       switch (item.header.type) {
       case "static":
@@ -366,13 +373,11 @@ itemInterpreter={
         itemsCt++;
         if (typeof s!="string") {
           if (s instanceof ItemLink) {
-            //cs[i]="%%%ITEM%%%"; itemCb();
-
             if (s.item.isValid()) {
               //TODO: is item in this case really a child, to the subitem?
               //create copy of childs, because of possibly async calls
               var chLocal=childs.slice();
-              chLocal.push(item);
+              chLocal.push(itemLink);
 
               itemInterpreter.compose(s,(function(i) { return function(itemStr) {
                 cs[i]=itemStr;
@@ -400,7 +405,7 @@ itemInterpreter={
               cs[i]=(new stat.states.items.INVALID_ITEM_FILE({action:"variable contains no path"})).toString();
               itemCb();
             } else {
-              var r;
+              var r=undefined;
               switch (v[0]) {
               case "child":
                 if (childs.length==0) {
@@ -410,7 +415,7 @@ itemInterpreter={
                   var chLocal=childs.slice();
                   chLocal.pop();
                   
-                  var link=new ItemLink(childs[childs.length-1]);
+                  var link=new ItemLink(childs[childs.length-1].item);
                   itemInterpreter.compose(
                     link,(function(i) { return function(itemStr) {
                       cs[i]=itemStr;
@@ -422,22 +427,19 @@ itemInterpreter={
                 break;
               case "data":
                 //search inline data
-                if (typeof itemLink.data[v[1]]!="undefined") {
+                //search local data scope
+                if ((itemLink.data!=undefined) && (itemLink.data[v[1]]!=undefined)) {
                   r=itemLink.data;
                 } else {
-                  if (typeof item.dataObj[v[1]]!="undefined") {
-                    //read from local data scope
-                    r=item.dataObj;
-                  } else {
-                    //search child tree
-                    for (var c=childs.length-1; c>=0; c--) {
-                      if (childs[c].dataObj[v[1]]) {
-                        r=childs[c].dataObj;
-                        break;
-                      }
+                  //search child tree
+                  for (var c=childs.length-1; c>=0; c--) {
+                    if ((childs[c].data) && (childs[c].data[v[1]])) {
+                      r=childs[c].data;
+                      break;
                     }
                   }
                 }
+
                 if (r!=undefined) {
                   follow(r,v);
                 } else {
@@ -529,7 +531,7 @@ itemInterpreter={
   /**
    * @event item.compose.pre
    * @param {ItemLink} itemLink item link to be composed
-   * @param {[Item]} childs array of childs
+   * @param {[ItemLink]} childs array of childs
    * @param {bool} asChild wether or not the item link is parsed as a child
    * @param {object} environment additional data passed for composing
    */
@@ -538,7 +540,7 @@ itemInterpreter={
    * @event item.compose.post
    * @param {sting} final the parsed string which will be returned
    * @param {ItemLink} itemLink item link to be composed
-   * @param {[Item]} childs array of childs
+   * @param {[ItemLink]} childs array of childs
    * @param {bool} asChild wether or not the item link is parsed as a child
    * @param {object} environment additional data passed for composing
    */

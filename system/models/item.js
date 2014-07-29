@@ -57,6 +57,19 @@ Item.prototype.hasFileErr=function() {
   return !(this.statusFile instanceof status.proto.item.valid);
 }
 
+Item.prototype.getStatusString=function(printValid) {
+  var str="";
+  if ((printValid) || (this.hasHeaderErr())) {
+    str+=this.statusHeader.toString();
+  }
+
+  if ((printValid) || (this.hasFileErr())) {
+    str+=this.statusFile.toString();
+  }
+
+  return str;
+}
+
 Item.prototype.loadHeader=function(callback) {
   this.header=undefined;
 
@@ -64,9 +77,9 @@ Item.prototype.loadHeader=function(callback) {
   function cb(err, result) {
     if ((err!=null) || (result.length!=1)) {
       if ((err==null) && (result.length==0)) {
-        self.statusHeader=new stat.states.items.NOT_FOUND({this:self});
+        self.statusHeader=new stat.states.items.NOT_FOUND();
       } else {
-        self.statusHeader=new stat.states.database.DATABASE_ERROR({err:err,this:self});
+        self.statusHeader=new stat.states.database.DATABASE_ERROR({err:err});
       }
     } else {
       self.header=result[0];
