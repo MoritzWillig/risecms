@@ -1,0 +1,4 @@
+#!/bin/bash
+
+sourceFiles=$(find -not \( -name "config.js" -prune \) -not \( -name "node_modules" -prune \) -not \( -name "libs" -prune \) -name "*.js" -print)
+jsdoc ${sourceFiles} --destination ./documentation/current

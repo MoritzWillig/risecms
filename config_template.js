@@ -28,7 +28,15 @@ config={
   system:{
     parser:{
       undef_item_is_error:true
-    }
+    },
+    request:{
+      items:{
+        //timeouts for composing items (mainly used to prevent item scripts from running to long)
+        sync_timeout:1000,
+        async_timeout:1000
+      }
+    },
+    plugins:["editor","auth"]
   },
   plugins:{
     editor:{

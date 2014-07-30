@@ -5,6 +5,8 @@ fs=require("fs");
 fsanchor=require("../../fsanchor.js");
 plugins=require("../controllers/pluginHandler.js");
 
+item=require("../../system/models/item.js");
+
 //helper function to check wether or not an variable is an number
 function checkNumber(x) {
   return !isNaN(+x);
@@ -334,9 +336,9 @@ pageItem={
           pageItem.getResourceData(result[0].id,result[0].type,addData,function(data,err) {
             console.log("loading data");
             if (!stat.isSuccessfull(err)) {
-              callback(null,new stat.states.items.ITEM_ERROR({description:"loading resource data",id:result[0].id,type:result[0].type,error:err}));
+              callback({item:null,data:addData},new stat.states.items.ITEM_ERROR({description:"loading resource data",id:result[0].id,type:result[0].type,error:err}));
             } else {
-              callback(data,new stat.states.database.OK());
+              callback({item:data,data:addData},new stat.states.database.OK());
             }
           });
           return;
@@ -367,7 +369,7 @@ pageItem={
                 parent=status.toString();
               }
               
-              callback(parent,new stat.states.items.OK());
+              callback({item:parent,data:addData},new stat.states.items.OK());
             };
 
             //load parent
@@ -384,7 +386,7 @@ pageItem={
           } else {
             console.log("accept item (no parent)");
             //no parent needed -> return
-            callback(item,new stat.states.items.OK());
+            callback({item:item,data:addData},new stat.states.items.OK());
           }
         }
 
@@ -392,7 +394,7 @@ pageItem={
         pageItem.getResourceString(result[0].id,result[0].type,addData,function(data,err) {
           console.log("loading resouce");
           if (!stat.isSuccessfull(err)) {
-            callback(null,new stat.states.items.ITEM_ERROR({description:"loading resource string",id:result[0].id,type:result[0].type,error:err}));
+            callback({item:null,data:addData},new stat.states.items.ITEM_ERROR({description:"loading resource string",id:result[0].id,type:result[0].type,error:err}));
           } else {
             //TODO add some item specific infos here (id,title,...)
             //addData.text=item;
@@ -404,10 +406,10 @@ pageItem={
         });
       } else {
         //error item does not exist
-        callback(null,new stat.states.items.NOT_FOUND({result:result,error:err}));
+        callback({item:null,data:addData},new stat.states.items.NOT_FOUND({result:result,error:err}));
       }
     } else {
-      callback(null,new stat.states.database.INVALID_QUERY({result:result,error:err}));
+      callback({item:null,data:addData},new stat.states.database.INVALID_QUERY({result:result,error:err}));
     }
   },
   loadById:function(id,callback,data) { console.log("requested id "+id);

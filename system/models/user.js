@@ -3,7 +3,13 @@ cg=require("../../config.js");
 stat=require("../../status.js");
 bcrypt=require("bcryptjs");
 
+/**
+ * User representing a user
+ * @param  {string}   name     name of the user
+ * @param  {Function} callback callback to be called when the user data is loaded
+ */
 user=function(name,callback) {
+  if (!callback) { callback=function() {}; }
   this.status=new stat.states.users.NO_USER();
 
   if (name!==undefined) {
@@ -13,10 +19,30 @@ user=function(name,callback) {
   }
 };
 
+/**
+ * name of the user
+ * @type {String}
+ */
 user.prototype.name  ="";
+/**
+ * groups containing the user
+ * @type {Array}
+ */
 user.prototype.groups=[];
-user.prototype.authenticated=undefined;
-user.prototype.data  =undefined;
+/**
+ * whether or not the user object was authenticated by a password
+ * @type {boolean}
+ */
+user.prototype.authenticated=false;
+/**
+ * additional data
+ * @type {Object}
+ */
+user.prototype.data  ={};
+/**
+ * status of the current user object
+ * @type {Status}
+ */
 user.prototype.status=undefined;
 
 user.prototype.loadByName=function(name,callback) {

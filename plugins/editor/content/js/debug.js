@@ -72,16 +72,17 @@ function findOrigin(node) {
   return {id:null,tag:null};
 }
 
+$(document).ready(function() {
+  $(document).dblclick(function(e,x) {
+    if (!editor) {
+      var t=e.explicitOriginalTarget?e.explicitOriginalTarget:e.target;
+      var data=findOrigin(t);
+      console.log("found origin ",t," at id ",data.id);
 
-document.body.ondblclick=function(e,x) {
-  if (!editor) {
-    var t=e.explicitOriginalTarget?e.explicitOriginalTarget:e.target;
-    var data=findOrigin(t);
-    console.log("found origin ",t," at id ",data.id);
-
-    loadEntry(data.id);
-  }
-}
+      loadEntry(data.id);
+    }
+  });
+});
 
 var ids=[];
 var idSE=[];
