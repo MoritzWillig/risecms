@@ -184,7 +184,7 @@ itemInterpreter={
                 addData=JSON.parse(addData);
                 dataCb();
               } catch(e) {
-                addData=newItem();
+                addData=new Item();
                 addData.statusFile=new stat.states.items.INVALID_ITEM_FILE({
                   action:"parsing inline JSON",
                   error:e,
