@@ -122,7 +122,7 @@ status.states={ //tree hirachy of status codes
     },
 
     static:{
-      MISMATCHING_PARENTHESIS: status.proto.item.proto.derive(300,"Mismatching parenthesis in item text")
+      MISMATCHING_PARENTHESES: status.proto.item.proto.derive(300,"Mismatching parentheses in item text")
     }
   },
   database:{

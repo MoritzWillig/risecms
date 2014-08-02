@@ -1,8 +1,8 @@
 Item=require("../models/item.js");
 Script=require("../models/script.js");
 ItemLink=require("../models/itemLink.js");
-findParenthesis=require("../helpers/parenthesis.js").findParenthesis;
-findNSurr=require("../helpers/parenthesis.js").findNSurr;
+findParentheses=require("../helpers/parentheses.js").findParentheses;
+findNSurr=require("../helpers/parentheses.js").findNSurr;
 scriptEnv=new (require("./scriptEnvironment.js"))();
 
 plugins=require("./pluginHandler.js");
@@ -88,9 +88,8 @@ itemInterpreter={
       
       //extract subitem strings
       var lastItemEnd=0;
-      var res=findParenthesis(str,"{{","}}","\\",lastItemEnd);
-      while ((!(res<0)) && (
-        !((res[0]==-1) && (res[1]==-1)))) {
+      var res=findParentheses(str,"{{","}}","\\",lastItemEnd);
+      while ((res[0]!=-1) && (res[1]!=-1) && (res[0]<res[1])) { //console.log("found new",res);
         //save plain text which does not contain item information
         var nItemStr=str.substr(lastItemEnd,res[0]-lastItemEnd);
         if (nItemStr!="") {
@@ -104,13 +103,26 @@ itemInterpreter={
         };
         root.itemStr.push(si);
         
-        res=findParenthesis(str,"{{","}}","\\",lastItemEnd);
+        res=findParentheses(str,"{{","}}","\\",lastItemEnd);
       }
       
-      if (res<0) {
-        var idx=-(res-1);
-        var sub=str.substr(idx,10);
-        root.statusFile=new stat.states.static.MISMATCHING_PARENTHESIS({position:idx,substr:sub});
+      if ((res[0]!=-1) || (res[1]!=-1) || (res[0]>res[1])) {
+        if ((res[0]!=-1) || (res[1]!=-1)) {
+          var idx=(res[0]==-1)?res[1]:res[0];
+          var sstr=str.substr(idx,10);
+          root.statusFile=new stat.states.items.static.MISMATCHING_PARENTHESES({
+            position:res,
+            substr:sstr
+          });
+        } else {
+          var sstr=str.substr(res[1],10);
+          root.statusFile=new stat.states.items.static.MISMATCHING_PARENTHESES({
+            msg:"closing before opening parentheses",
+            position:res,
+            substr:sstr
+          });
+        }
+        
         checkCallback(true);
       } else {
         //save last plain text which does not contain item information
