@@ -215,9 +215,10 @@ itemInterpreter={
                 } else {
                   //data item has to be from type "data"
                   if (item.header.type=="data") {
-                    addData=item.dataObj;
+                    addData=item;
                   } else {
-                    addData=new stat.states.items.INVALID_ITEM_FILE({
+                    addData=new Item();
+                    addData.statusFile=new stat.states.items.INVALID_ITEM_FILE({
                       action:"loading data item - item has to be of type data",
                     });
                   }
@@ -370,10 +371,15 @@ itemInterpreter={
         },((item.header.name!="")?item.header.name:(item.header.path)?item.header.path:"")+"["+item.header.id+"]");
         return;
       case "data":
-        callback("%%%not implemented yet%%%");
+        callback((new stat.states.items.INVALID_ITEM_FILE({
+          type:item.header.type
+        })).toString());
+        return;
         return;
       default:
-        callback((new stat.states.items.UNKNOWN_RESOURCE_TYPE()).toString());
+        callback((new stat.states.items.UNKNOWN_RESOURCE_TYPE({
+          type:item.header.type
+        })).toString());
         return;
       }
 
@@ -427,17 +433,46 @@ itemInterpreter={
                   var chLocal=childs.slice();
                   chLocal.pop();
                   
-                  var link=new ItemLink(childs[childs.length-1].item);
-                  itemInterpreter.compose(
-                    link,(function(i) { return function(itemStr) {
-                      cs[i]=itemStr;
+                  if (childs[childs.length-1].item.header.type!="data") {
+                    if ((v.length==2) && (v[1]=="text")) {
+                      var link=new ItemLink(childs[childs.length-1].item);
+                      itemInterpreter.compose(
+                        link,(function(i) { return function(itemStr) {
+                          cs[i]=itemStr;
+                          itemCb();
+                        }; })(i),
+                        chLocal,true,environment
+                      );
+                    } else {
+                      //invalid item path
+                      cs[i]=(new stat.states.items.UNKNOWN_VARIABLE({
+                        path:v.join("."),
+                        msg:"item childs can only be composed with $child.text path"
+                      })).toString();
                       itemCb();
-                    }; })(i),
-                    chLocal,true,environment
-                  );
+                    }
+                  } else {
+                    //is data item
+                    if (!childs[childs.length-1].item.isValid()) {
+                      cs[i]=new stat.states.items.INVALID_ITEM_FILE({
+                        action:"accessing child data - data item is invalid",
+                      });
+                      itemCb();
+                    } else {
+                      follow(childs[childs.length-1].item.dataObj,v);
+                    }
+                  }
                 }
                 break;
               case "data":
+                if ((itemLink.dataItem) && (!itemLink.dataItem.isValid())) {
+                  cs[i]=new stat.states.items.INVALID_ITEM_FILE({
+                    action:"looking up data item - attached data item is invalid",
+                  });
+                  itemCb();
+                  break;
+                }
+
                 //search inline data
                 //search local data scope
                 if ((itemLink.data!=undefined) && (itemLink.data[v[1]]!=undefined)) {
