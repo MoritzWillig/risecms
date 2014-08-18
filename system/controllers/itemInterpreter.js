@@ -188,12 +188,23 @@ itemInterpreter={
             }
           }
 
-          if (addData!=undefined) {
+          if ((addData!=undefined) && (addData!="")) {
             if (isInline(addData)) {
               //parse inline data
               addData=addData.substr(1,addData.length);
               try {
-                addData=JSON.parse(addData);
+                addData=JSON.parse("["+addData+"]");
+                if (addData.length==0) {
+                  addData=undefined; //addData string contained only whitespaces
+                } else {
+                  var inl=addData;
+                  addData=inl[0]; //make $0 default path
+
+                  //map parameters to $x
+                  for (var j in inl) {
+                    addData["$"+j]=inl[j]
+                  }
+                }
                 dataCb();
               } catch(e) {
                 addData=new Item();
@@ -393,7 +404,7 @@ itemInterpreter={
           if (s instanceof ItemLink) {
             if (s.item.isValid()) {
               //TODO: is item in this case really a child, to the subitem?
-              //create copy of childs, because of possibly async calls
+              //create copy of childs, because of possible async calls
               var chLocal=childs.slice();
               chLocal.push(itemLink);
 
