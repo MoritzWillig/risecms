@@ -18,7 +18,6 @@ function ScriptEnvironment() {
 
 ScriptEnvironment.prototype.run=function(script,env,callback,scriptName) {
     if (!env) { env={}; }
-    //TODO: make scripts time out (introduced at node v0.11)
     
     var callbackTriggered=false;
     var timerHandle;
@@ -38,6 +37,7 @@ ScriptEnvironment.prototype.run=function(script,env,callback,scriptName) {
         }
       } else {
         //TODO: for now we are ignoring multiple calls from a script
+        //this could maybe logged for debugging
       }
     }
 

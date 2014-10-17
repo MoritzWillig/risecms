@@ -68,7 +68,6 @@ Item.prototype.header=null;
  * @type {[string]}
  */
 Item.prototype.file=undefined;
-//Item.prototype.dataScope={};
 
 /**
  * parsed file attribute. Item elements have to be parsed and the whole array concernated to get the final item string

@@ -110,25 +110,25 @@ app.use('/', function(req, res) {
   var evtObj={req:req,res:res,environment:environment};
   plugins.trigger("page.pre",evtObj);
   
-  var pageItem=ItemInterpreter.create(req.url,true,function(item) {
-    if (item.isValid()) {
-      var evtObj={req:req,res:res,item:item,environment:environment};
+  var pageItemLink=ItemInterpreter.create(req.url,true,function(itemLink) {
+    if (itemLink.item.isValid()) {
+      var evtObj={req:req,res:res,itemLink:itemLink,item:itemLink.item,environment:environment};
       plugins.trigger("page.preCompose",evtObj);
       
-      var link=new ItemLink(item);
-      ItemInterpreter.compose(link,function(final) {
+      debugger;
+      ItemInterpreter.compose(itemLink,function(final) {
         pagePost(200,final);
       },undefined,undefined,environment);
     } else {
-      if (item.hasHeaderErr()) {
-        pagePost(404,"Error - "+item.statusHeader.toString());
+      if (itemLink.item.hasHeaderErr()) {
+        pagePost(404,"Error - "+itemLink.item.statusHeader.toString());
       } else {
-        pagePost(404,"Error - "+item.statusFile.toString());
+        pagePost(404,"Error - "+itemLink.item.statusFile.toString());
       }
     }
 
     function pagePost(code,pageStr) {
-      var evtObj={req:req,res:res,code:code,item:item,page:pageStr,environment:environment};
+      var evtObj={req:req,res:res,code:code,itemLink:itemLink,item:itemLink.item,page:pageStr,environment:environment};
       plugins.trigger("page.post",evtObj);
       res.send(evtObj.code,evtObj.page);
     }
@@ -158,6 +158,7 @@ var server = app.listen(cg.http.port, cg.http.host, function() {
    * @param {Request} req http request
    * @param {Response} pes http response
    * @param {Item} item item to be composed and send
+   * @param {ItemLink} itemLink itemlink holding the item
    * @param {Object} environment environment param object
    */
   plugins.registerEvent("page.preCompose");
@@ -166,6 +167,8 @@ var server = app.listen(cg.http.port, cg.http.host, function() {
    * @param {Request} req http request
    * @param {Response} res http response
    * @param {int} code http status code
+   * @param {Item} item item to be composed and send
+   * @param {ItemLink} itemLink itemlink holding the item
    * @param {String} page composed item string 
    * @param {Object} environment environment param object
    */

@@ -98,9 +98,14 @@ ItemLink.prototype.dataItem=undefined;
  */
 ItemLink.prototype.modifiers={post:[]};
 /**
- * replacements to apply to the data of the linked item
+ * replacements to be done in data
  * @type {Array}
  */
 ItemLink.prototype.replacements=[];
+/**
+ * scope (in most cases parent) of the itemlink. Used to resolve replacement paths
+ * @type {undefindef/itemLink}
+ */
+ItemLink.prototype.scope=undefined;
 
 module.exports=ItemLink;
