@@ -252,6 +252,11 @@ itemInterpreter={
               function subDataParse() {
                 //search data paths
                 var cpath=[];
+                /**
+                 * replaces references to other data with DataPaths
+                 * @param  {object} obj object to search in
+                 * @return {object}     object with replaced references
+                 */
                 function repl(obj) {
                   //TODO: fails if obj itself is an DataPath
                   for (var c in obj) {
@@ -264,14 +269,13 @@ itemInterpreter={
                     } else {
                       if ((to=="string") && (curr.length>2) && (curr[0]=="$") && (curr[curr.length-1]=="$")) {
                         //found data path
-                        console.log("current item is",link.item.header.name);
                         var dr=new DataPath(curr.substr(1,curr.length-2)); var ts=(+new Date());
                         //set including parent to allow access to the data scope while resolving
                         dr.scope={ ts:ts,
                           root:link,
                           childs:[] //<- add childs here
                           //TODO: childs have to be known at this point, move child array assembly from compose to parse
-                        }; console.log("added scope",ts,aaddData,"parent inline",link.data);
+                        };
                         obj[c]=dr;
                         il.replacements.push({
                           path:dr,
@@ -282,9 +286,9 @@ itemInterpreter={
                   }
                   return obj;
                 }
-                aaddData=repl(aaddData);
-
+                
                 il.setData(aaddData);
+                il.data=repl(il.data);
                 il.modifiers={post:[ascript]}
                 il.item.parent=root;
 
@@ -366,7 +370,6 @@ itemInterpreter={
     function checkCallback(addItemLoaded) {
       if (addItemLoaded==true) { itemLoaded=true; }
       if (itemLoaded && parentLoaded) {
-        console.log("returning link with",link.data);
         callback(link);
       }
     }
@@ -467,7 +470,6 @@ itemInterpreter={
               plugins - plugin specific data - planned - to be done
             */
             (function(i) {
-              console.log("following datapath at",itemLink.item.header?itemLink.item.header.name:"anonym");
               PathResolver.follow(new DataPath(s),itemLink,childs,environment,function(status,data) {
                 if (stat.isSuccessfull(status)) {
                   switch (typeof data) {

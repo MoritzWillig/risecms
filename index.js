@@ -115,7 +115,6 @@ app.use('/', function(req, res) {
       var evtObj={req:req,res:res,itemLink:itemLink,item:itemLink.item,environment:environment};
       plugins.trigger("page.preCompose",evtObj);
       
-      debugger;
       ItemInterpreter.compose(itemLink,function(final) {
         pagePost(200,final);
       },undefined,undefined,environment);

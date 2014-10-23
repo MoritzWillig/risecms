@@ -16,7 +16,6 @@ PathResolver={
    * @sync
    */
   follow:function(datapath,itemlink,childs,environment,callback,forceSync,resPaths) {
-    console.log("following",datapath.toString(),datapath.scope?"[scope]":"");
     if (!forceSync) { forceSync=false; }
     if (!resPaths) {
       resPaths=[datapath];
@@ -42,7 +41,7 @@ PathResolver={
 
     //TODO: if child array assembly is moved to parse, read data from the item links
     var rp_root=new DataPath();
-    if (datapath.scope) { console.log("using scope");
+    if (datapath.scope) {
       childs=datapath.scope.childs;
     }
 
@@ -158,7 +157,7 @@ PathResolver={
           }
         }
       } else {
-        if (currentValue.h instanceof DataPath) { console.log("found sub datapath",currentValue.h.scope);
+        if (currentValue.h instanceof DataPath) {
           //try resolving data path
           PathResolver.follow(currentValue.h,itemlink,childs,environment,function(status,data) {
             if (stat.isSuccessfull(status)) {
