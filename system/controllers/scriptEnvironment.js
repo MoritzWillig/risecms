@@ -29,7 +29,8 @@ ScriptEnvironment.prototype.run=function(script,env,callback,scriptName) {
 
       if (!callbackTriggered) {
         callbackTriggered=true;
-
+        localDomain.exit();
+        
         if (typeof str!="string") {
           callback(new stat.states.items.script.INVALID_TYPE({result:str}).toString());
         } else {

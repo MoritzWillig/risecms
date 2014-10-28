@@ -91,6 +91,7 @@ itemInterpreter={
 
     function interpretStatic() {
       var str=root.file;
+      root.file=null; //free memory
       
       //extract subitem strings
       var lastItemEnd=0;
@@ -412,6 +413,7 @@ itemInterpreter={
       case "static":
         break;
       case "text":
+        //TODO: ADD ITEM PRE/POST EVENT
         callback(item.itemStr[0]);
         return;
       case "script":
@@ -423,15 +425,18 @@ itemInterpreter={
           environment:environment,
           childs:chLocal
         },function(result) {
+          //TODO: ADD ITEM PRE/POST EVENT
           callback(result);
         },((item.header.name!="")?item.header.name:(item.header.path)?item.header.path:"")+"["+item.header.id+"]");
         return;
       case "data":
+        //TODO: ADD ITEM PRE/POST EVENT
         callback((new stat.states.items.INVALID_ITEM_FILE({
           type:item.header.type
         })).toString());
         return;
       default:
+        //TODO: ADD ITEM PRE/POST EVENT
         callback((new stat.states.items.UNKNOWN_RESOURCE_TYPE({
           type:item.header.type
         })).toString());

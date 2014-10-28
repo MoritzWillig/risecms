@@ -1,3 +1,5 @@
+heapdump=require("heapdump")
+
 //load configuration
 var cg=require('./config.js');
 var nitem=require("./system/models/pageitem.js");
@@ -95,6 +97,15 @@ plugins.setup(app,{
   plugins:pluginRouter
 });
 
+
+debugRouter=express.Router();
+debugRouter.use('/heapdump', function(req, res, next) {
+  var path="./snapshots/heapdump_"+(+new Date())+".heapsnapshot";
+  heapdump.writeSnapshot(fsanchor.resolve(path,"root"));
+  console.log("heapsnapshot",path);
+  res.send("ok");
+});
+app.use("/",debugRouter);
 
 /*
  * CMS routing
