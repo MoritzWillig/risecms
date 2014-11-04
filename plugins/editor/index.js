@@ -21,11 +21,13 @@ var sourceTracker={
     debCrNew="<script>"+debCrNew+"</script>";
 
     var debJqrTag='<script src="'+data.environment.host+'/content/plugins/editor/js/libs/jQuery_v1.11.1.js"></script>'
+    var debWinTagTag='<script src="'+data.environment.host+'/content/plugins/editor/js/DebugWindowTab.js"></script>';
+    var debWinTag='<script src="'+data.environment.host+'/content/plugins/editor/js/debugWindow.js"></script>';
     var debSrcTag='<script src="'+data.environment.host+'/content/plugins/editor/js/debug.js"></script>';
     var debCssTag='<link rel="stylesheet" type="text/css" href="'+data.environment.host+'/content/plugins/editor/css/debug.css">';
     var debAncTag='<script>riseCMSHost="'+data.environment.host+'";</script>';
     var debEdtTag='<script src="'+data.environment.host+'/content/plugins/editor/js/libs/ace-builds/src-noconflict/ace.js"></script>';
-    var debTag=debJqrTag+"\n"+debAncTag+"\n"+debCrNew+"\n"+debEdtTag+"\n"+debSrcTag+"\n"+debCssTag+"\n";
+    var debTag=debJqrTag+"\n"+debAncTag+"\n"+debCrNew+"\n"+debEdtTag+"\n"+debWinTagTag+"\n"+debWinTag+"\n"+debSrcTag+"\n"+debCssTag+"\n";
     //find head tag
     var res=data.page.replace(/<\/head>/i,debTag+"</head>");
     if (res.length==data.page.length) {
@@ -65,6 +67,23 @@ function checkRights(user) {
     }
   }
   return false;
+}
+
+function isValidHeader(header) {
+  var headerColumns =["id" ,"section","path","name","uri_name","title","parent","type","created"];
+  var headerEditable=[false,true     ,true  ,true  ,true      ,true   ,true    ,true  ,false    ];
+
+  if (typeof header!="object") {
+    return false;
+  }
+
+  for (var i in header) {
+    if ((headerColumns.indexOf(i)==-1) || (headerEditable[i]==false)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function editorInit(pluginHandler) {
@@ -114,6 +133,9 @@ function editorInit(pluginHandler) {
     if (postData.header!=undefined) {
       try {
         header=JSON.parse(postData.header);
+        if (!isValidHeader(header)) {
+          throw new Error("header data is invalid");
+        }
       } catch(e) {
         var resObj={
           code:404,
@@ -176,6 +198,9 @@ function editorInit(pluginHandler) {
     if (postData.header!=undefined) {
       try {
         header=JSON.parse(postData.header);
+        if (!isValidHeader(header)) {
+          throw new Error("header data is invalid");
+        }
       } catch(e) {
         var resObj={
           code:404,
@@ -263,7 +288,7 @@ function editorInit(pluginHandler) {
     var data =postData.data;
 
     //check path is under content
-    if (nPath.substr(0,cont.length)===cont) {
+    if (nPath.substr(0,cont.length)===cont) { console.log();
       fs.writeFile(nPath,data,function(err) {
         if (err) {
           res.send({
