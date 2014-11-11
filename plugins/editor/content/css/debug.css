@@ -81,19 +81,37 @@
 
 .editScreen {
   position:absolute;
-  height:calc(100% - 125px); /* 100% - 25px - 80px -20px  footer-header-titlebar*/
-  width: calc(100% - 250px);
+  height:calc(100% - 105px); /* 100% - 80px -25px  footer-header-titlebar*/
+  width: 100%;
   font-size:12pt;
+  left:0px;
+  top:80px;
+}
+
+.editFileScreen {
+  position:absolute;
+  height:calc(100% - 25px); /* 100% - 80px -25px  footer-header-titlebar*/
+  width: 100%;
+  font-size:12pt;
+  left:0px;
+  top:0px;
+}
+
+.editScreenLayout {
+  position: absolute;
   left:250px;
-  top:100px;
+  top:20px;
+  height:calc(100% - 20px);
+  width: calc(100% - 250px);
+  background-color:#00a;
 }
 
 .editScreenFooter {
   position:absolute;
   height:24px;
-  width:calc(100% - 250px);
+  width:100%;
   bottom:0px;
-  left:250px;
+  left:0px;
   background-color: #111;
   border-top: 1px solid #000;
 }

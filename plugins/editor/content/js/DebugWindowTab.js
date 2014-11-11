@@ -7,7 +7,6 @@ DebugWindowItem=function DebugWindowItem(id,name) {
   this.gui=debugWindow.gui.elements.div.clone().addClass("editScreenSourceEntry").text(this.id+" | "+this.name);
 }
 
-//TODO change data & header
 DebugWindowTab=function DebugWindowTab(item) {
   this._cache={
     status:undefined,
@@ -66,6 +65,25 @@ DebugWindowTab.prototype.setHeader=function(header) {
   this._cache.header=header;
 }
 
+DebugWindowTab.prototype.save=function(callback) {
+  self=this;
+  self.getData(function(data) {
+    self.getHeader(function(header) {
+      if (self.isValid() && (data!=undefined) && (header!=undefined)) {
+        if (self.item) {
+          editorAPI.setItem(self.item.id,data,header,function(status,data) {
+            callback(status);
+          });
+        } else {
+          throw new Error("save new item - not implemented");
+        }
+      } else {
+        callback("item is not valid");
+      }
+    });
+  });
+}
+
 DebugWindowTab.prototype._updateCache=function(callback) {
   var self=this;
   
@@ -77,7 +95,7 @@ DebugWindowTab.prototype._updateCache=function(callback) {
     
       editorAPI.getItem(this.item.id,function(status,data) {
         self._cache.status=(status==undefined)?200:status;
-        self._cache.description=data.description;
+        self._cache.description=data.error||data.description||"";
         self._cache.data=data.data;
         self._cache.header=data.header;
 
@@ -104,3 +122,6 @@ DebugWindowTab.prototype.isValid=function() {
   return (this._cache.status==200);
 };
 
+DebugWindowTab.prototype.getStatusString=function() {
+  return (this.isValid())?"":this._cache.description;
+}

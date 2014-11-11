@@ -244,6 +244,11 @@ editorAPI={
       data: (data==undefined)?undefined:data
     },callback);
   },
+  setContent:function(path,data,callback) {
+    this.set("content/set/"+path,{
+      data: (data==undefined)?undefined:data
+    },callback);
+  },
   getAppliedItems:function() {
     var items=[];
     var nodes=document.getElementsByClassName("riseCMSDebug");

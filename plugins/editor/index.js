@@ -20,14 +20,35 @@ var sourceTracker={
     }
     debCrNew="<script>"+debCrNew+"</script>";
 
-    var debJqrTag='<script src="'+data.environment.host+'/content/plugins/editor/js/libs/jQuery_v1.11.1.js"></script>'
-    var debWinTagTag='<script src="'+data.environment.host+'/content/plugins/editor/js/DebugWindowTab.js"></script>';
-    var debWinTag='<script src="'+data.environment.host+'/content/plugins/editor/js/debugWindow.js"></script>';
-    var debSrcTag='<script src="'+data.environment.host+'/content/plugins/editor/js/debug.js"></script>';
-    var debCssTag='<link rel="stylesheet" type="text/css" href="'+data.environment.host+'/content/plugins/editor/css/debug.css">';
-    var debAncTag='<script>riseCMSHost="'+data.environment.host+'";</script>';
-    var debEdtTag='<script src="'+data.environment.host+'/content/plugins/editor/js/libs/ace-builds/src-noconflict/ace.js"></script>';
-    var debTag=debJqrTag+"\n"+debAncTag+"\n"+debCrNew+"\n"+debEdtTag+"\n"+debWinTagTag+"\n"+debWinTag+"\n"+debSrcTag+"\n"+debCssTag+"\n";
+    //TODO remove hard-coded strings
+    var debAnchorTag='<script>riseCMSHost="'+data.environment.host+'";</script>';
+    var jsSources=[
+      "js/libs/jQuery_v1.11.1.js",
+      "js/DebugWindowTab.js",
+      "js/DebugWindowFileTab.js",
+      "js/DebugWindowLayout.js",
+      "js/DebugWindowItemLayout.js",
+      "js/DebugWindowFileLayout.js",
+      "js/debugWindow.js",
+      "js/debug.js",
+      "js/libs/ace-builds/src-noconflict/ace.js"
+    ];
+    var cssSources=[
+      "css/debug.css"
+    ];
+    
+    var jsTagStr="";
+    for (var i in jsSources) {
+      jsTagStr+='<script src="'+data.environment.host+'/content/plugins/editor/'+jsSources[i]+'"></script>\n';
+    }
+
+    var cssTagStr="";
+    for (var i in cssSources) {
+      cssTagStr+='<link rel="stylesheet" type="text/css" href="'+data.environment.host+'/content/plugins/editor/'+cssSources[i]+'">\n';
+    }
+
+    var debTag=debAnchorTag+jsTagStr+cssTagStr;
+
     //find head tag
     var res=data.page.replace(/<\/head>/i,debTag+"</head>");
     if (res.length==data.page.length) {
@@ -288,7 +309,7 @@ function editorInit(pluginHandler) {
     var data =postData.data;
 
     //check path is under content
-    if (nPath.substr(0,cont.length)===cont) { console.log();
+    if (nPath.substr(0,cont.length)===cont) {
       fs.writeFile(nPath,data,function(err) {
         if (err) {
           res.send({
@@ -313,7 +334,7 @@ function editorInit(pluginHandler) {
   });
 
   pluginHandler.registerRoute("plugins","/editor/",function(req,res,next) {
-    res.send("{code:404,error:'invalid url'}");
+    res.send(JSON.stringify({code:404,error:'invalid url'}));
   });
 }
 

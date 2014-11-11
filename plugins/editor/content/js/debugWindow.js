@@ -5,7 +5,7 @@ debugWindow={
 
   _contentRoot:{
     type:"directory",
-    fullPath:"/",
+    fullPath:"",
     sub:[],
     gui:undefined
   },
@@ -16,13 +16,10 @@ debugWindow={
     elements:{},
     background:undefined,
     window:undefined,
-    header:{
-      headerNames:undefined,
-      headerValues:undefined,
-      values:{}
-    }
   },
   activeTab:undefined,
+
+  layoutMgr:undefined,
   
   _setup:function() {
     var self=this;
@@ -37,14 +34,10 @@ debugWindow={
 
     this.gui.background=this.gui.elements.div.clone().addClass("editScreenBg");
     this.gui.window    =this.gui.elements.div.clone().addClass("editScreenWindow");
-    
+    this.gui.layout=this.gui.elements.div.clone().addClass("editScreenLayout");
+
     this.gui.items   =this.gui.elements.div.clone().addClass("ess");
     this.gui.contents=this.gui.elements.div.clone().addClass("esc");
-
-    this.gui.header.headerNames=this.gui.elements.tr.clone().addClass("editScreenTitleDesc");
-    this.gui.header.headerValues=this.gui.elements.tr.clone();
-
-    this.gui.editorScreen=this.gui.elements.div.clone().addClass("editScreen");
 
     this.gui.window.append([
       this.gui.elements.div.clone().addClass("editScreenTitlebar").append(
@@ -55,36 +48,9 @@ debugWindow={
         this.gui.items,
         this.gui.contents
       ]),
-      this.gui.elements.div.clone().addClass("editScreenHeaderWrapper").append(
-        this.gui.elements.table.clone().addClass("editScreenHeader").append([
-          this.gui.header.headerNames,
-          this.gui.header.headerValues
-        ])
-      ),
       //TODO: add tab bar to display open files
-      this.gui.editorScreen,
-      this.gui.elements.div.clone().addClass("editScreenFooter").append([
-        //this.gui.elements.button.clone().click(function() { self.saveCurrent(true,false); }).text("save content"),
-        //this.gui.elements.button.clone().click(function() { self.saveCurrent(false,true); }).text("save header"),
-        this.gui.elements.button.clone().click(function() { self.saveCurrent(); }).text("save all")
-      ])
+      this.gui.layout
     ]);
-
-    this._setupEditor();
-    
-    for (var i in editorAPI.headerColumns) {
-      this.gui.header.values[editorAPI.headerColumns[i]]=this.gui.elements.input.clone()
-        .addClass("editScreenHead").text("").prop("disabled",!this._headerEnabled[i]);
-
-      this.gui.header.headerNames.append(
-        this.gui.elements.td.clone().text(editorAPI.headerColumns[i])
-      );
-      this.gui.header.headerValues.append(
-        this.gui.elements.td.clone().append(
-          this.gui.header.values[editorAPI.headerColumns[i]]
-        )
-      );
-    }
 
     this._contentRoot.gui=this._createDirectoryGui("root",function() {});
     this._contentRoot.gui.title.remove();
@@ -93,13 +59,19 @@ debugWindow={
     this.gui.background.append(this.gui.window);
     $(document.body).append(this.gui.background);
 
+    this.layoutMgr=new DebugWindowLayoutManager(this.gui.layout);
+    var itemLayout=new DebugWindowItemLayout();
+    this.layoutMgr.layouts.push(itemLayout);
+    this.layoutMgr.layouts.push(new DebugWindowFileLayout());
+
+    this.layoutMgr.display(undefined,itemLayout);
     this.setVisibility(true);
   },
 
   isVisible:function() {
     return this._visible;
   },
-
+  
   setVisibility:function(visible) {
     this._visible=visible;
 
@@ -111,37 +83,11 @@ debugWindow={
 
     return this.isVisible();
   },
-
-  saveCurrent:function(content,header) {
-    if (content!==false) { content=true; }
-    if (header!==false) { header=true; }
-
-    if ((this.activeTab) && (this.activeTab.isValid())) {
-      this.storeTab();
-      var tab=this.activeTab;
-
-      if (tab.item) {
-        tab.getData(function(data) {
-          tab.getHeader(function(header) {
-            editorAPI.setItem(tab.item.id,data,header,function(status,data) {
-              if (status) {
-                display(status);
-              }
-            });
-          });
-        });
-      } else {
-        throw new Error("save new item - not implemented");
-      }
-    } else {
-      throw new Error("no active tab");
-    }
-
-  },
+  
   closeEditor:function() {
     this.setVisibility(false);
   },
-
+  
   getContentDirectory:function(path) {
     var current=this._contentRoot;
     for (var i in path) {
@@ -179,13 +125,12 @@ debugWindow={
     }
   },
   addContentFile:function(directory,name) {
+    var self=this;
     if (directory.type=="directory") {
       if (!directory.sub[name]) {
-        directory.sub[name]={
-          type:"file",
-          fullPath:directory.fullPath+"/"+name,
-          gui:this._createFileGui(name,function() { self._showFile(dir); })
-        };
+        var file=new DebugWindowFile(directory.fullPath+"/"+name,name);
+
+        directory.sub[name]=file;
         this._appendToGui(directory,directory.sub[name]);
       } else {
         throw new Error(name+" does already exist");
@@ -216,12 +161,7 @@ debugWindow={
     directory.visible=!directory.visible;
     directory.gui.css("display",directory.visible?"initial":"none")
   },
-  _createFileGui:function(name,callback) {
-    var gui={
-      node:this.gui.elements.div.clone().addClass("scrContEl").addClass("srcContFile").text(name).click(callback)
-    };
-    return gui;
-  },
+  
   _createDirectoryGui:function(name,callback) {
     var title=this.gui.elements.div.clone().addClass("scrContEl").addClass("srcContNodeName").text(name);
     var content=this.gui.elements.div.clone().addClass("srcContNodeSub");
@@ -235,24 +175,15 @@ debugWindow={
     };
     return gui;
   },
+  
   _appendToGui:function(directory,element) {
     directory.gui.content.append(element.gui.node);
   },
-  _setupEditor:function() {
-
-    this.editor=ace.edit(this.gui.editorScreen[0]);
-    this.editor.setTheme("ace/theme/kr_theme");
-    
-    this.editor.getSession().setTabSize(2);
-    this.editor.getSession().setUseSoftTabs(true);
-    this.editor.getSession().setUseWrapMode(false);
-    this.editor.setHighlightActiveLine(false);
-    this.editor.setValue("");
-    this.editor.setReadOnly(true);
-  },
+  
   getWindowItem:function(id) {
     return this._itemList[id];
   },
+  
   setWindowItem:function(item) {
     var self=this;
     var existingItem=this.getWindowItem(item.id);
@@ -267,6 +198,7 @@ debugWindow={
       });
     }
   },
+  
   removeWindowItem:function(id) {
     var item=this.getWindowItem(id);
     if (item!=undefined) {
@@ -274,9 +206,8 @@ debugWindow={
       delete this._itemList[id];
     }
   },
+  
   displayItem:function(item) {
-    var self=this;
-
     if (this.getWindowItem(item.id)!=item) {
       this.setWindowItem(item);
     }
@@ -284,103 +215,38 @@ debugWindow={
     if (!item.tab) {
       item.tab=new DebugWindowTab(item);
     }
-    self.loadTab(item.tab);
+    
+    this.layoutMgr.display(item.tab);
   },
-  getData:function() {
-    if (this.activeTab) {
-      return this.editor.getValue();
-    } else {
-      throw new Error("no active tab");
+  
+  displayFile:function(file) {
+    if (!(file instanceof DebugWindowFile)) {
+      throw new Error("data is no file");
     }
-  },
-  getHeader:function() {
-    if (this.activeTab) {
-      var header={};
 
-      for (var i in editorAPI.headerColumns) {
-        header[editorAPI.headerColumns[i]]=this.gui.header.values[editorAPI.headerColumns[i]].val();
-      }
-
-      return header;
-    } else {
-      throw new Error("no active tab");
+    var tab=this._getTabByData(file);
+    if (!tab) {
+      tab=new DebugWindowFileTab(file);
+      this._setTabByData(file,tab);
     }
+
+    this.layoutMgr.display(tab);
   },
+
+  tabsByData:new Map(),
+  _getTabByData:function(data) {
+    return this.tabsByData.get(data);
+  },
+  _setTabByData:function(data,tab) {
+    this.tabsByData.set(data,tab);
+  },
+  
   storeTab:function() {
     if ((this.activeTab) && (this.activeTab.isValid())) {
       this.activeTab.setData(this.getData());
       this.activeTab.setHeader(this.getHeader());
     } else {
       throw new Error("no active tab");
-    }
-  },
-  loadTab:function(tab) {
-    if (this.activeTab) {
-      //store & deactivate active tab
-      this.storeTab();
-      this.activeTab=undefined;
-      tab.setActive(false);
-    }
-
-    //lock editor
-    this.editor.setReadOnly(true);
-    this.editor.getSession().getUndoManager().markClean();
-
-    var self=this;
-    var dataB=false;
-    var headB=false;
-    var dataN=undefined;
-    var headerN=undefined;
-
-    tab.getData(function(data) {
-      dataB=true;
-      dataN=data;
-      load();
-    });
-    tab.getHeader(function(header) {
-      headB=true;
-      headerN=header;
-      load();
-    });
-  
-    function load() {
-      if (dataB && headB) {
-        if (tab.isValid()) {
-          tab.setActive(true);
-          self.activeTab=tab;
-          var types={
-            "static":{ mode:"ace/mode/html" },
-            "script":{ mode:"ace/mode/javascript" },
-            "data":{ mode:"ace/mode/json" },
-            "text":{ mode:"ace/mode/text" }
-          };
-          var mode=types[headerN.type].mode;
-
-          if (mode==undefined) {
-            mode="ace/mode/text";
-          }
-          
-          //TODO: set editor to write-only if item type has no data
-          self.editor.setReadOnly(false);
-          self.editor.getSession().setMode(mode);
-          self.editor.setValue(dataN,-1);
-        } else {
-          self.activeTab=undefined;
-          self.editor.setReadOnly(true);
-          self.editor.setValue("error while loading",-1);
-          display(tab._cache.status+" - "+tab._cache.description);
-        }
-
-        for (var i in editorAPI.headerColumns) {
-          if (tab.isValid()) {
-            self.gui.header.values[editorAPI.headerColumns[i]].val(headerN[editorAPI.headerColumns[i]]);
-            self.gui.header.values[editorAPI.headerColumns[i]].attr("disabled",!self._headerEnabled[i]);
-          } else {
-            self.gui.header.values[editorAPI.headerColumns[i]].val("");
-            self.gui.header.values[editorAPI.headerColumns[i]].attr("disabled",true); 
-          }
-        }
-      }
     }
   }
 };
