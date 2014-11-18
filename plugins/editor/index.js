@@ -31,7 +31,7 @@ var sourceTracker={
       "js/DebugWindowSearchTab.js",
       "js/DebugWindowItemLayout.js",
       "js/DebugWindowFileLayout.js",
-      "js/DebugWindowSeachLayout.js",
+      "js/DebugWindowSearchLayout.js",
       "js/debugWindow.js",
       "js/debug.js",
       "js/libs/ace-builds/src-noconflict/ace.js"
