@@ -5,6 +5,7 @@ pageItem=require("../../system/models/pageitem.js");
 cg=require("../../config.js");
 rdrec=require("../../modules/readDirRecursive");
 User=require("../../system/models/user.js");
+db=require("../../system/models/database.js").getInstance();
 
 var sourceTracker={
   insertDebugScript:function(event,data) {
@@ -27,8 +28,10 @@ var sourceTracker={
       "js/DebugWindowTab.js",
       "js/DebugWindowFileTab.js",
       "js/DebugWindowLayout.js",
+      "js/DebugWindowSearchTab.js",
       "js/DebugWindowItemLayout.js",
       "js/DebugWindowFileLayout.js",
+      "js/DebugWindowSeachLayout.js",
       "js/debugWindow.js",
       "js/debug.js",
       "js/libs/ace-builds/src-noconflict/ace.js"
@@ -90,16 +93,20 @@ function checkRights(user) {
   return false;
 }
 
-function isValidHeader(header) {
-  var headerColumns =["id" ,"section","path","name","uri_name","title","parent","type","created"];
-  var headerEditable=[false,true     ,true  ,true  ,true      ,true   ,true    ,true  ,false    ];
+var headerColumns =["id" ,"section","path"  ,"name"  ,"uri_name","title" ,"parent","type"  ,"created"  ];
+var headerEditable=[false,true     ,true    ,true    ,true      ,true    ,true    ,true    ,false      ];
+var headerType    =["int","string" ,"string","string","string"  ,"string","string","string","timestamp"];
+
+function isValidHeader(header,readonly) {
+  if (readonly!=false) { readonly=true; }
 
   if (typeof header!="object") {
     return false;
   }
 
   for (var i in header) {
-    if ((headerColumns.indexOf(i)==-1) || (headerEditable[i]==false)) {
+    var idx=headerColumns.indexOf(i);
+    if ((idx==-1) || ((!readonly) && (headerEditable[idx]==false))) {
       return false;
     }
   }
@@ -331,6 +338,99 @@ function editorInit(pluginHandler) {
         descr:"invalid directory"
       });
     }
+  });
+
+  function isInt(val) {
+    return (val === parseInt(val, 10))
+  }
+
+  function sendError(res,msg,err) {
+    var resObj={
+      code:404,
+      desc:msg,
+      err:err?err.toString():undefined
+    };
+    res.send(resObj);
+  }
+
+  pluginHandler.registerRoute("plugins","/editor/query/item",function(req,res,next) {
+    var postData=paramObj(req);
+
+    var header=undefined;
+    if (postData.queryHeader!=undefined) {
+      try {
+        header=JSON.parse(postData.queryHeader);
+        if (!isValidHeader(header,true)) {
+          throw new Error("header data is invalid");
+        }
+      } catch(e) {
+        sendError(res,"invalid json for item header",e);
+        return;
+      }
+    }
+
+    //assemble query - from header data
+    var query=[];
+    var params=[cg.database.pageTable];
+    for (var i in header) {
+      var idx=headerColumns.indexOf(i);
+      switch (headerType[idx]) {
+      case "string":
+        if (typeof header[i]!="string") {
+          sendError(res,"invalid header type at "+i);
+          return;
+        }
+
+        query.push("(?? LIKE ? ESCAPE \"!\")");
+        params.push(headerColumns[idx]);
+        //escapes %,! and _ with !
+        params.push("%"+header[i].replace(/%|!|_/g,"!$&")+"%");
+        break;
+      case "int":
+      case "timestamp":
+        if ((!(header[i] instanceof Array)) || (!isInt(header[i][0])) || (!isInt(header[i][1]))) {
+          sendError(res,"invalid header type at "+i);
+          return;
+        }
+
+        if (header[i][0]==header[i][1]) {
+          query.push("(??=?)");
+          params.push(headerColumns[idx]);
+          params.push(header[i][0]);
+        } else {
+          query.push("(?? BETWEEN ? AND ?)");
+          params.push(headerColumns[idx]);
+          params.push(header[i][0]);
+          params.push(header[i][1]);
+        }
+        break;
+      default:
+        throw new Error("unknown header type "+headerType[i]);
+      }
+    }
+
+    if (query.length==0) {
+      sendError(res,"no query header was given");
+      return;
+    }
+
+    var queryStr="SELECT * FROM ?? WHERE "+query.join(" AND ");
+
+
+    //query item headers
+    db.query(queryStr,params,function(err,result) {
+      if (err!=null) {
+        sendError(res,"database error",err);
+        return;
+      }
+
+      var dataObj={
+        code:200,
+        description:"ok",
+        results:result,
+      };
+      res.send(dataObj);
+    });
   });
 
   pluginHandler.registerRoute("plugins","/editor/",function(req,res,next) {

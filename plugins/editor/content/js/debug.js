@@ -174,8 +174,9 @@ function saveNewItem(header, data) {
 }
 
 editorAPI={
-  headerColumns :["id" ,"section","path","name","uri_name","title","parent","type","created"],
-  headerEditable:[false,true     ,true  ,true  ,true      ,true   ,true    ,true  ,false    ],
+  headerColumns :["id" ,"section","path"  ,"name"  ,"uri_name","title" ,"parent","type"  ,"created"  ],
+  headerEditable:[false,true     ,true    ,true    ,true      ,true    ,true    ,true    ,false      ],
+  headerType    :["int","string" ,"string","string","string"  ,"string","string","string","timestamp"],
 
   get:function(action,callback) {
     $.ajax(riseCMSHost+"/plugins/editor/"+action,{
@@ -196,7 +197,7 @@ editorAPI={
           header:[]
         });
       }
-    })    
+    });
   },
   getItem:function(id,callback) {
     this.get(id+"/get",callback);
@@ -248,6 +249,32 @@ editorAPI={
     this.set("content/set/"+path,{
       data: (data==undefined)?undefined:data
     },callback);
+  },
+  query:function(action,query,callback) {
+    $.ajax(riseCMSHost+"/plugins/editor/query/"+action,{
+      type:"GET",
+      dataType:"json",
+      cache:false,
+      data:{queryHeader:JSON.stringify(query)},
+      success:function(data,testStatus,jqXHR) {
+        if (data.code!=200) {
+          callback("api error",data);
+        } else {
+          callback(undefined,data);
+        }
+      },
+      error:function() {
+        callback("request failed",{
+          description:"ajax error"
+        });
+      }
+    });
+  },
+  queryItem:function(data,callback) {
+    this.query("item",data,callback);
+  },
+  queryContent:function(data,callback) {
+    this.query("content",data,callback);
   },
   getAppliedItems:function() {
     var items=[];

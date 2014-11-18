@@ -39,11 +39,26 @@
 }
 
 .esc {
-  height:calc(50% - 1px);
+  height:calc(50% - 60px - 1px);
   border-top:1px solid white;
 
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+.editScreenToolBar {
+  height:calc(60px - 1px);
+  border-top:1px solid white;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.editScreenToolBar div {
+  padding:5px;
+  font-weight: bold;
+  border-bottom:1px solid #222;
+  cursor:pointer;
 }
 
 
@@ -56,6 +71,15 @@
   border-bottom: 1px solid #000;
 }
 
+.editScreenResultsWrapper {
+  white-space: nowrap;
+  overflow-y:scroll;
+  overflow-x:scroll;
+  height:calc(100% - 80px);
+  background-color: #111;
+  border-bottom: 1px solid #000;
+}
+
 .editScreenHeader {
   height:44px;
 
@@ -64,6 +88,19 @@
   overflow-x:scroll;
   width:100%;
 }
+
+.editScreenResultsTable {
+  height:calc(100% - 80px);
+}
+
+.editScreenResultsTable table {
+  width:100%;
+}
+
+.fullLineTable {
+  color:#fff;
+}
+
 
 .editScreenHeader tr, .editScreenHeader td {
   margin:0px;

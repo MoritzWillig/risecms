@@ -46,6 +46,7 @@ DebugWindowLayoutManager.prototype.store=function() {
 
 DebugWindowLayout=function() {
 }
+DebugWindowLayout.prototype.acceptedTabTypes=[];
 
 DebugWindowLayout.prototype.getGUI=function(gui) {
   throw new Error("not implemented");
@@ -60,5 +61,12 @@ DebugWindowLayout.prototype.store=function() {
 }
 
 DebugWindowLayout.prototype.acceptsTab=function(tab) {
-  throw new Error("not implemented");
+  if (tab==undefined) { return true; }
+
+  for (var i in this.acceptedTabTypes) {
+    if (tab instanceof this.acceptedTabTypes[i]) {
+      return true;
+    }
+  }
+  return false;
 }

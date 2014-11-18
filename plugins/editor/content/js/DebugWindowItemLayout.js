@@ -166,17 +166,6 @@ DebugWindowItemLayout.prototype._getHeader=function() {
   }
 };
 
-DebugWindowItemLayout.prototype.acceptsTab=function(tab) {
-  if (tab==undefined) { return true; }
-
-  for (var i in this.acceptedTabTypes) {
-    if (tab instanceof this.acceptedTabTypes[i]) {
-      return true;
-    }
-  }
-  return false;
-}
-
 DebugWindowItemLayout.prototype.reset=function(message) {
   if (message==undefined) { message=""; }
   //store current tab

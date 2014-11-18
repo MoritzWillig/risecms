@@ -38,6 +38,7 @@ debugWindow={
 
     this.gui.items   =this.gui.elements.div.clone().addClass("ess");
     this.gui.contents=this.gui.elements.div.clone().addClass("esc");
+    this.gui.toolbar =this.gui.elements.div.clone().addClass("editScreenToolBar");
 
     this.gui.window.append([
       this.gui.elements.div.clone().addClass("editScreenTitlebar").append(
@@ -46,7 +47,8 @@ debugWindow={
       this.gui.elements.div.clone().addClass("editScreenSources").append([
         //TODO: add element to switch to item filters
         this.gui.items,
-        this.gui.contents
+        this.gui.contents,
+        this.gui.toolbar
       ]),
       //TODO: add tab bar to display open files
       this.gui.layout
@@ -63,6 +65,27 @@ debugWindow={
     var itemLayout=new DebugWindowItemLayout();
     this.layoutMgr.layouts.push(itemLayout);
     this.layoutMgr.layouts.push(new DebugWindowFileLayout());
+    this.layoutMgr.layouts.push(new DebugWindowSearchLayout(function(id) {
+      var item=self.getWindowItem(id);
+      if (item==undefined) {
+        //create item
+        //TODO get name of item when item is loaded
+        item=new DebugWindowItem(nodes[i].dataset.id,nodes[i].dataset.name);
+      }
+
+      self.displayItem(item);
+    }));
+
+    //setup toolbar
+    var searchButton=this.gui.elements.div.clone().click(function() {
+      tab=new DebugWindowSearchTab();
+      self._setTabByData(tab,tab);
+      
+      self.layoutMgr.display(tab);
+    }).text("search item");
+    this.gui.toolbar.append([
+      searchButton
+    ]);
 
     this.layoutMgr.display(undefined,itemLayout);
     this.setVisibility(true);
