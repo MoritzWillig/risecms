@@ -4,7 +4,11 @@ DebugWindowItem=function DebugWindowItem(id,name) {
   this.name=(name==undefined)?"":name;
   this.tab=undefined;
 
-  this.gui=debugWindow.gui.elements.div.clone().addClass("editScreenSourceEntry").text(this.id+" | "+this.name);
+  this.gui=debugWindow.gui.elements.div.clone().addClass("editScreenSourceEntry").text(this.getName());
+}
+
+DebugWindowItem.prototype.getName=function() {
+  return this.id+(this.name?" | "+this.name:"");
 }
 
 DebugWindowTab=function DebugWindowTab(item) {
@@ -30,6 +34,10 @@ DebugWindowTab=function DebugWindowTab(item) {
     }
   }
 };
+
+DebugWindowTab.prototype.getTabLabel=function() {
+  return this.item.getName();
+}
 
 DebugWindowTab.prototype.setActive=function(state) {
   //TODO add tab gui

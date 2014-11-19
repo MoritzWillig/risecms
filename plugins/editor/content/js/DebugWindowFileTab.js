@@ -39,6 +39,10 @@ DebugWindowFileTab=function DebugWindowFileTab(file) {
   }
 };
 
+DebugWindowFileTab.prototype.getTabLabel=function() {
+  return this.file.name;
+}
+
 DebugWindowFileTab.prototype.setActive=function(state) {
   //TODO add tab gui
 };

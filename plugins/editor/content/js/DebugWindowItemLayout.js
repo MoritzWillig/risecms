@@ -1,8 +1,6 @@
 DebugWindowItemLayout=function() {
   DebugWindowLayout.apply(this,[]);
 
-  this.activeTab=undefined;
-
   this.gui={
     header:{
       headerNames:undefined,

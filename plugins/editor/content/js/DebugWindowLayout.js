@@ -28,6 +28,14 @@ DebugWindowLayoutManager.prototype.display=function(tab,layout) {
   this.activeLayout.display(tab);
 }
 
+DebugWindowLayoutManager.prototype.getActiveTab=function() {
+  if (this.activeLayout) {
+    return this.activeLayout.getActiveTab();
+  }
+
+  return undefined;
+}
+
 DebugWindowLayoutManager.prototype.findLayout=function(tab) {
   for (var i in this.layouts) {
     if (this.layouts[i].acceptsTab(tab)) {
@@ -46,7 +54,10 @@ DebugWindowLayoutManager.prototype.store=function() {
 
 DebugWindowLayout=function() {
 }
+
 DebugWindowLayout.prototype.acceptedTabTypes=[];
+
+DebugWindowLayout.prototype.activeTab=undefined;
 
 DebugWindowLayout.prototype.getGUI=function(gui) {
   throw new Error("not implemented");
@@ -54,6 +65,10 @@ DebugWindowLayout.prototype.getGUI=function(gui) {
 
 DebugWindowLayout.prototype.display=function(tab) {
   throw new Error("not implemented");
+}
+
+DebugWindowLayout.prototype.getActiveTab=function() {
+  return this.activeTab;
 }
 
 DebugWindowLayout.prototype.store=function() {

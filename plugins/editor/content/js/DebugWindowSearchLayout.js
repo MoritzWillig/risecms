@@ -1,8 +1,6 @@
 DebugWindowSearchLayout=function(loadRequest) {
   DebugWindowLayout.apply(this,[]);
 
-  this.activeTab=undefined;
-
   this.loadRequest=loadRequest;
 
   this.gui={

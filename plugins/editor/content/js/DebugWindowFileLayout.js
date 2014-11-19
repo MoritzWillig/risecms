@@ -1,8 +1,6 @@
 DebugWindowFileLayout=function() {
   DebugWindowLayout.apply(this,[]);
 
-  this.activeTab=undefined;
-
   this.gui={
     layout:undefined,
     activeButtons:[]

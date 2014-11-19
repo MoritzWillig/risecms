@@ -15,6 +15,10 @@ DebugWindowSearchTab=function DebugWindowSearchTab() {
   }
 };
 
+DebugWindowSearchTab.prototype.getTabLabel=function() {
+  return "item search";
+}
+
 DebugWindowSearchTab.prototype.setActive=function(state) {
   //TODO add tab gui
 };

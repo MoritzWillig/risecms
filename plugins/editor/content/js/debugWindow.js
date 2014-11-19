@@ -40,17 +40,18 @@ debugWindow={
     this.gui.contents=this.gui.elements.div.clone().addClass("esc");
     this.gui.toolbar =this.gui.elements.div.clone().addClass("editScreenToolBar");
 
+    this.gui.tabbar=this.gui.elements.div.clone().addClass("editScreenTabBar");
+
     this.gui.window.append([
       this.gui.elements.div.clone().addClass("editScreenTitlebar").append(
         this.gui.elements.div.clone().addClass("editScreenClose").click(function() { self.closeEditor() }).text("x")
       ),
       this.gui.elements.div.clone().addClass("editScreenSources").append([
-        //TODO: add element to switch to item filters
         this.gui.items,
         this.gui.contents,
         this.gui.toolbar
       ]),
-      //TODO: add tab bar to display open files
+      this.gui.tabbar,
       this.gui.layout
     ]);
 
@@ -63,6 +64,8 @@ debugWindow={
 
     this.layoutMgr=new DebugWindowLayoutManager(this.gui.layout);
     var itemLayout=new DebugWindowItemLayout();
+    this.defaultLayout=itemLayout;
+
     this.layoutMgr.layouts.push(itemLayout);
     this.layoutMgr.layouts.push(new DebugWindowFileLayout());
     this.layoutMgr.layouts.push(new DebugWindowSearchLayout(function(id) {
@@ -81,13 +84,13 @@ debugWindow={
       tab=new DebugWindowSearchTab();
       self._setTabByData(tab,tab);
       
-      self.layoutMgr.display(tab);
+      self.displayTab(tab);
     }).text("search item");
     this.gui.toolbar.append([
       searchButton
     ]);
 
-    this.layoutMgr.display(undefined,itemLayout);
+    this.layoutMgr.display(undefined,this.defaultLayout);
     this.setVisibility(true);
   },
 
@@ -234,12 +237,14 @@ debugWindow={
     if (this.getWindowItem(item.id)!=item) {
       this.setWindowItem(item);
     }
-    
-    if (!item.tab) {
-      item.tab=new DebugWindowTab(item);
+
+    var tab=this._getTabByData(item);
+    if (!tab) {
+      tab=new DebugWindowTab(item);
+      this._setTabByData(item,tab);
     }
     
-    this.layoutMgr.display(item.tab);
+    this.displayTab(tab);
   },
   
   displayFile:function(file) {
@@ -253,10 +258,87 @@ debugWindow={
       this._setTabByData(file,tab);
     }
 
-    this.layoutMgr.display(tab);
+    this.displayTab(tab);
   },
 
-  tabsByData:new Map(),
+  tabGuis:new Map(),
+  displayTab:function(tab) {
+    //remove focus from currently active tab
+    var activeTab=this.layoutMgr.getActiveTab();
+    if (activeTab) {
+      var activeGui=this.tabGuis.get(activeTab);
+      if (activeGui==undefined) {
+        throw new Error("unknown active tab gui");
+      }
+
+      activeGui.removeClass("editScreenTabBarTabActive");
+    }
+
+    //display tab
+    this.layoutMgr.display(tab);
+
+    this.addHistory(tab);
+
+    //add new tab gui if not displayed
+    var gui=this.tabGuis.get(tab);
+    if (gui==undefined) {
+      var self=this;
+
+      var close=this.gui.elements.div.clone().addClass("editScreenTabBarTabClose").text("x").click(function() {
+        self.closeTab(tab);
+      });
+      var label=this.gui.elements.div.clone().addClass("editScreenTabBarTabLabel").text(tab.getTabLabel());
+      gui=this.gui.elements.div.clone().addClass("editScreenTabBarTab").clone().append([
+        label,
+        close
+      ]).click(function() {
+        self.displayTab(tab);
+      });
+      this.tabGuis.set(tab,gui);
+
+      this.gui.tabbar.append(gui);
+    }
+
+    //activate tab gui
+    gui.addClass("editScreenTabBarTabActive");
+  },
+
+  closeTab:function(tab) {
+    //display another tab
+    this.removeFromHistory(tab);
+    if (this.tabHistory.length!=0) {
+      this.displayTab(this.tabHistory[this.tabHistory.length-1]);
+    } else {
+      //display empty layout
+      this.layoutMgr.display(undefined,this.defaultLayout);
+    }
+
+    //remove tab gui
+    var gui=this.tabGuis.get(tab);
+    if (gui==undefined) {
+      throw new Error("unknown tab");
+    }
+    
+    gui.remove();
+    this.tabGuis.delete(tab);
+  },
+
+  tabHistory:[],
+  addHistory:function(tab) {
+    var idx=this.tabHistory.indexOf(tab);
+    if (idx!=-1) {
+      this.tabHistory.splice(idx,1);
+    }
+    this.tabHistory.push(tab);
+  },
+  removeFromHistory:function(tab) {
+    var idx=this.tabHistory.indexOf(tab);
+    if (idx!=-1) {
+      this.tabHistory.splice(idx,1);
+    }
+  },
+
+  tabsByData:new WeakMap(),
   _getTabByData:function(data) {
     return this.tabsByData.get(data);
   },
