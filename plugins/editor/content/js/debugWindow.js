@@ -90,6 +90,10 @@ debugWindow={
       searchButton
     ]);
 
+    this._saveWrapper=function(e) {
+      self._save(e);
+    }
+
     this.layoutMgr.display(undefined,this.defaultLayout);
     this.setVisibility(true);
   },
@@ -107,11 +111,41 @@ debugWindow={
       this.gui.background.css("display","none");
     }
 
+    this.updateShortcuts();
+
     return this.isVisible();
   },
   
   closeEditor:function() {
     this.setVisibility(false);
+  },
+
+  updateShortcuts:function() {
+    if (this.isVisible()) {
+      $(window).on("keypress",this._saveWrapper);
+    } else {
+      $(window).off("keypress",this._saveWrapper);
+    }
+  },
+
+  _saveWrapper:undefined,
+  _save:function(e) {
+    if (e.ctrlKey && e.key.toLowerCase()=="s") {
+      e.stopPropagation();
+      e.preventDefault();
+
+      var layout=this.layoutMgr.getActiveLayout();
+      if (layout.getActiveTab()!=undefined) {
+        layout.saveActiveItem(function(status) {
+          if (status!=undefined) {
+            display("error saving tab: "+status);
+          } else {
+            display("saved tab");
+          }
+        });
+      }
+      
+    }
   },
   
   getContentDirectory:function(path) {

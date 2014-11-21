@@ -7,7 +7,7 @@ DebugWindowFileLayout=function() {
   };
 
   this.gui.editorScreen=debugWindow.gui.elements.div.clone().addClass("editFileScreen");
-  var saveButton=debugWindow.gui.elements.button.clone().click(function() { self._saveActiveItem(); }).text("save all");
+  var saveButton=debugWindow.gui.elements.button.clone().click(function() { self.saveActiveItem(); }).text("save all");
 
   var self=this;
   this.gui.layout=debugWindow.gui.elements.div.clone().append([
@@ -122,19 +122,4 @@ DebugWindowFileLayout.prototype.setReadOnly=function(readOnly) {
   this.editor.setReadOnly(readOnly);
 
   $(this.gui.activeButtons).each(function() { this.prop("disabled",readOnly); });
-}
-
-DebugWindowFileLayout.prototype._saveActiveItem=function() {
-  if (this.activeTab) {
-    this.store();
-    this.activeTab.save(function(status) {
-      if (status!=undefined) {
-        display("error saving item: "+status);
-      } else {
-        display("saved item");
-      }
-    });
-  } else {
-    throw new Error("no active tab");
-  }
 }

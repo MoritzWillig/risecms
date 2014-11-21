@@ -14,7 +14,7 @@ DebugWindowItemLayout=function() {
   this.gui.header.headerNames=debugWindow.gui.elements.tr.clone().addClass("editScreenTitleDesc");
   this.gui.header.headerValues=debugWindow.gui.elements.tr.clone();
   this.gui.editorScreen=debugWindow.gui.elements.div.clone().addClass("editScreen");
-  var saveButton=debugWindow.gui.elements.button.clone().click(function() { self._saveActiveItem(); }).text("save all");
+  var saveButton=debugWindow.gui.elements.button.clone().click(function() { self.saveActiveItem(); }).text("save all");
 
   var self=this;
   this.gui.layout=debugWindow.gui.elements.div.clone().append([
@@ -191,19 +191,4 @@ DebugWindowItemLayout.prototype.setReadOnly=function(readOnly) {
   }
 
   $(this.gui.activeButtons).each(function() { this.prop("disabled",readOnly); });
-}
-
-DebugWindowItemLayout.prototype._saveActiveItem=function() {
-  if (this.activeTab) {
-    this.store();
-    this.activeTab.save(function(status) {
-      if (status!=undefined) {
-        display("error saving item: "+status);
-      } else {
-        display("saved item");
-      }
-    });
-  } else {
-    throw new Error("no active tab");
-  }
 }

@@ -29,11 +29,16 @@ DebugWindowLayoutManager.prototype.display=function(tab,layout) {
 }
 
 DebugWindowLayoutManager.prototype.getActiveTab=function() {
-  if (this.activeLayout) {
-    return this.activeLayout.getActiveTab();
+  var layout=this.getActiveLayout();
+  if (layout) {
+    return layout.getActiveTab();
   }
 
   return undefined;
+}
+
+DebugWindowLayoutManager.prototype.getActiveLayout=function() {
+  return this.activeLayout;
 }
 
 DebugWindowLayoutManager.prototype.findLayout=function(tab) {
@@ -84,4 +89,13 @@ DebugWindowLayout.prototype.acceptsTab=function(tab) {
     }
   }
   return false;
+}
+
+DebugWindowLayout.prototype.saveActiveItem=function(callback) {
+  if (this.activeTab) {
+    this.store();
+    this.activeTab.save(callback);
+  } else {
+    throw new Error("no active tab");
+  }
 }

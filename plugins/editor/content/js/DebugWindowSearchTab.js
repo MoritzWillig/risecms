@@ -41,7 +41,8 @@ DebugWindowSearchTab.prototype.setResults=function(results) {
 }
 
 DebugWindowSearchTab.prototype.save=function(callback) {
-  throw new Error("search tab does not support saving");
+  console.log("search tabs do not support saving");
+  callback();
 }
 
 DebugWindowSearchTab.prototype.updateResults=function(callback) {
