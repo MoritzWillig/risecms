@@ -109,38 +109,23 @@ DebugWindowSearchLayout.prototype.display=function(tab) {
   
   if (this.activeTab!=undefined) {
     var self=this;
-    this.activeTab.getResults(function(results) {
-      self.activeTab.getHeader(function(header) {
-        //fill header
-        for (var i in editorAPI.headerColumns) {
-          switch (editorAPI.headerType[i]) {
-          case "string":
-            self.gui.header[editorAPI.headerColumns[i]].val(header[editorAPI.headerColumns[i]]);
-            break;
-          case "int":
-          case "timestamp":
-            self.gui.header[editorAPI.headerColumns[i]][0].val(header[editorAPI.headerColumns[i]][0]);
-            self.gui.header[editorAPI.headerColumns[i]][1].val(header[editorAPI.headerColumns[i]][1]);
-            break;
-          }
+    this.activeTab.getHeader(function(header) {
+      //fill header
+      for (var i in editorAPI.headerColumns) {
+        switch (editorAPI.headerType[i]) {
+        case "string":
+          self.gui.header[editorAPI.headerColumns[i]].val(header[editorAPI.headerColumns[i]]);
+          break;
+        case "int":
+        case "timestamp":
+          self.gui.header[editorAPI.headerColumns[i]][0].val(header[editorAPI.headerColumns[i]][0]);
+          self.gui.header[editorAPI.headerColumns[i]][1].val(header[editorAPI.headerColumns[i]][1]);
+          break;
         }
-        
-        //append new rows
-        var rows=[];
-        for (var i in results) {
-          var row=debugWindow.gui.elements.tr.clone();
-
-          for (var j in editorAPI.headerColumns) {
-            var column=debugWindow.gui.elements.td.clone().text(
-              results[i][editorAPI.headerColumns[j]]
-            );
-            row.push(column);
-          }
-        }
-
-        self.gui.results.append(rows);
-      });
+      }
     });
+
+    this._updateResults();
   }
 }
 
@@ -250,6 +235,7 @@ DebugWindowSearchLayout.prototype._updateResults=function() {
     //set results
     this.activeTab.getResults(function(results) {
       var rows=[];
+      self._results=results;
 
       for (var i in results) {
         var result=results[i];
