@@ -321,6 +321,14 @@ debugWindow={
     
     gui.remove();
     this.tabGuis.delete(tab);
+
+    //remove data-tab link
+    var data=this._getDataByTab(tab);
+    if (data==undefined) {
+      throw new Error("unknown data-tab binding");
+    }
+    this.tabsByData.delete(data);
+    this.dataByTabs.delete(tab);
   },
 
   tabHistory:[],
@@ -338,12 +346,17 @@ debugWindow={
     }
   },
 
-  tabsByData:new WeakMap(),
+  tabsByData:new Map(),
+  dataByTabs:new Map(),
   _getTabByData:function(data) {
     return this.tabsByData.get(data);
   },
+  _getDataByTab:function(tab) {
+    return this.dataByTabs.get(tab);
+  },
   _setTabByData:function(data,tab) {
     this.tabsByData.set(data,tab);
+    this.dataByTabs.set(tab,data);
   },
   
   storeTab:function() {
