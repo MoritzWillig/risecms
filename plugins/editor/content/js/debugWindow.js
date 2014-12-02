@@ -77,7 +77,7 @@ debugWindow={
       if (item==undefined) {
         //create item
         //TODO get name of item when item is loaded
-        item=new DebugWindowItem(nodes[i].dataset.id,nodes[i].dataset.name);
+        item=new DebugWindowItem(id);
       }
 
       self.displayItem(item);
