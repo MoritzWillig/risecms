@@ -150,29 +150,6 @@ function isEditorClean() {
   return ((editor.getSession().getUndoManager().isClean()) && (!changedHeaderValue));
 }
 
-function saveNewItem(header, data) {
-  $.ajax(riseCMSHost+"/plugins/editor/new",{
-    type:"POST",
-    dataType:"json",
-    data:{
-      header:(typeof header=="undefined")?undefined:JSON.stringify(header),
-      data:  data
-    },
-    success:function(data,testStatus,jqXHR) {
-      if (data.code==200) {
-        display("ok - loading item now");
-        loadEntry(data.id);
-        addId(data.id);
-      } else {
-        display("could not save item");
-      }
-    },
-    error:function() {
-      display("can not connect to server");
-    }
-  });
-}
-
 editorAPI={
   headerColumns :["id" ,"section","path"  ,"name"  ,"uri_name","title" ,"parent","type"  ,"created"  ],
   headerEditable:[false,true     ,true    ,true    ,true      ,true    ,true    ,true    ,false      ],
@@ -225,8 +202,24 @@ editorAPI={
       }
     });
   },
-  newItem:function(path,data,callback) {
-    throw "not implemented"
+  newItem:function(data,header,callback) {
+    if (header==undefined) {
+      throw new Error("no header was given");
+    }
+
+    var headerSend=undefined;
+    //filter read-only columns
+    headerSend={};
+    for (var i in this.headerEditable) {
+      if (this.headerEditable[i]==true) {
+        headerSend[this.headerColumns[i]]=header[this.headerColumns[i]];
+      }
+    }
+
+    this.set("new/",{
+      header:JSON.stringify(headerSend),
+      data: (data==undefined)?undefined:data
+    },callback);
   },
   setItem:function(id,data,header,callback) {
     var headerSend=undefined;

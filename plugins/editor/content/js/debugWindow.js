@@ -63,11 +63,15 @@ debugWindow={
     $(document.body).append(this.gui.background);
 
     this.layoutMgr=new DebugWindowLayoutManager(this.gui.layout);
-    var itemLayout=new DebugWindowItemLayout();
+    var itemLayout=new DebugWindowItemLayout(function() {
+      self._save();
+    });
     this.defaultLayout=itemLayout;
 
     this.layoutMgr.layouts.push(itemLayout);
-    this.layoutMgr.layouts.push(new DebugWindowFileLayout());
+    this.layoutMgr.layouts.push(new DebugWindowFileLayout(function() {
+      self._save();
+    }));
     this.layoutMgr.layouts.push(new DebugWindowSearchLayout(function(id) {
       var item=self.getWindowItem(id);
       if (item==undefined) {
@@ -91,8 +95,37 @@ debugWindow={
     ]);
 
     this._saveWrapper=function(e) {
-      self._save(e);
+      if (e.ctrlKey && e.key.toLowerCase()=="s") {
+        e.stopPropagation();
+        e.preventDefault();
+        self._save();
+      }
     }
+
+    //add "new" button for items
+    var newButton=this.gui.elements.div.clone().click(function() {
+      var tab=new DebugWindowTab(undefined,function(newId) {
+        var item=new DebugWindowItem(newId,tab._cache.header.name);
+        //add new item to tab
+        tab.setItem(item);
+
+        //update tab description
+        var gui=self.tabGuis.get(tab);
+        if (gui==undefined) {
+          throw new Error("unknown tab");
+        } else {
+          //update description
+          //because the item was created and set in this function
+          //get tab label is !=undefined
+          gui.children().first().text(tab.getTabLabel());
+        }
+        
+        //set new data binding
+        self._setTabByData(item,tab);
+      });
+      self.displayTab(tab);
+    }).text("new item");
+    this.gui.items.append(newButton);
 
     this.layoutMgr.display(undefined,this.defaultLayout);
     this.setVisibility(true);
@@ -129,22 +162,16 @@ debugWindow={
   },
 
   _saveWrapper:undefined,
-  _save:function(e) {
-    if (e.ctrlKey && e.key.toLowerCase()=="s") {
-      e.stopPropagation();
-      e.preventDefault();
-
-      var layout=this.layoutMgr.getActiveLayout();
-      if (layout.getActiveTab()!=undefined) {
-        layout.saveActiveItem(function(status) {
-          if (status!=undefined) {
-            display("error saving tab: "+status);
-          } else {
-            display("saved tab");
-          }
-        });
-      }
-      
+  _save:function() {
+    var layout=this.layoutMgr.getActiveLayout();
+    if (layout.getActiveTab()!=undefined) {
+      layout.saveActiveItem(function(status) {
+        if (status!=undefined) {
+          display("error saving tab: "+status);
+        } else {
+          display("saved tab");
+        }
+      });
     }
   },
   
@@ -268,13 +295,15 @@ debugWindow={
   },
   
   displayItem:function(item) {
-    if (this.getWindowItem(item.id)!=item) {
+    if ((item.id!=undefined) && (this.getWindowItem(item.id)!=item)) {
       this.setWindowItem(item);
     }
 
     var tab=this._getTabByData(item);
     if (!tab) {
-      tab=new DebugWindowTab(item);
+      tab=new DebugWindowTab(item,function() {
+        throw new Error("saving new items from existing item");
+      });
       this._setTabByData(item,tab);
     }
     
@@ -321,7 +350,8 @@ debugWindow={
       var close=this.gui.elements.div.clone().addClass("editScreenTabBarTabClose").text("x").click(function() {
         self.closeTab(tab);
       });
-      var label=this.gui.elements.div.clone().addClass("editScreenTabBarTabLabel").text(tab.getTabLabel());
+      var tabLabel=tab.getTabLabel();
+      var label=this.gui.elements.div.clone().addClass("editScreenTabBarTabLabel").text(tabLabel?tabLabel:"* new tab");
       gui=this.gui.elements.div.clone().addClass("editScreenTabBarTab").clone().append([
         label,
         close

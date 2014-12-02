@@ -1,4 +1,4 @@
-DebugWindowItemLayout=function() {
+DebugWindowItemLayout=function(onSaveRequest) {
   DebugWindowLayout.apply(this,[]);
 
   this.gui={
@@ -14,7 +14,9 @@ DebugWindowItemLayout=function() {
   this.gui.header.headerNames=debugWindow.gui.elements.tr.clone().addClass("editScreenTitleDesc");
   this.gui.header.headerValues=debugWindow.gui.elements.tr.clone();
   this.gui.editorScreen=debugWindow.gui.elements.div.clone().addClass("editScreen");
-  var saveButton=debugWindow.gui.elements.button.clone().click(function() { self.saveActiveItem(); }).text("save all");
+  var saveButton=debugWindow.gui.elements.button.clone().click(function() {
+    onSaveRequest(self);
+  }).text("save all");
 
   var self=this;
   this.gui.layout=debugWindow.gui.elements.div.clone().append([
@@ -95,9 +97,12 @@ DebugWindowItemLayout.prototype.display=function(tab) {
         if (states.length!=0) {
           self.reset("loading error: \n"+states.join("\n")+"\n"+self.activeTab.getStatusString());
         } else {
-          var mode=self.editorTypes[headerData.type].mode;
-          if (mode==undefined) {
+          var type=self.editorTypes[headerData.type];
+          var mode;
+          if (type==undefined) {
             mode="ace/mode/text";
+          } else {
+            mode=type.mode;
           }
           
           self.editor.getSession().setMode(mode);

@@ -223,6 +223,7 @@ function editorInit(pluginHandler) {
     var postData=paramObj(req);
     var data =postData.data;
     var header=undefined;
+
     if (postData.header!=undefined) {
       try {
         header=JSON.parse(postData.header);

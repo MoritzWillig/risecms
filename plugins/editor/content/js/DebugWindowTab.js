@@ -11,7 +11,7 @@ DebugWindowItem.prototype.getName=function() {
   return this.id+(this.name?" | "+this.name:"");
 }
 
-DebugWindowTab=function DebugWindowTab(item) {
+DebugWindowTab=function DebugWindowTab(item,onNewItem) {
   this._cache={
     status:undefined,
     description:undefined,
@@ -23,20 +23,27 @@ DebugWindowTab=function DebugWindowTab(item) {
     callbackQueue:[]
   };
 
+  this.onNewItem=onNewItem;
+
   this.item=item;
   if (!this.item) {
     this._cache.status=200;
     this._cache.description="ok";
-    this.data="";
-    this.header={}
+    this._cache.data="";
+    this._cache.header={};
     for (var i in editorAPI.headerColumns) {
-      this.header[editorAPI.headerColumns[i]]=undefined;
+      this._cache.header[editorAPI.headerColumns[i]]=undefined;
     }
   }
 };
 
+DebugWindowTab.prototype.setItem=function(item) {
+  this.item=item;
+  this._cache.header.id=this.item.id;
+}
+
 DebugWindowTab.prototype.getTabLabel=function() {
-  return this.item.getName();
+  return (this.item)?this.item.getName():undefined;
 }
 
 DebugWindowTab.prototype.setActive=function(state) {
@@ -70,7 +77,11 @@ DebugWindowTab.prototype.setData=function(data) {
 }
 
 DebugWindowTab.prototype.setHeader=function(header) {
-  this._cache.header=header;
+  for (var i in header) {
+    if (i!="id") {
+      this._cache.header[i]=header[i];
+    }
+  }
 }
 
 DebugWindowTab.prototype.save=function(callback) {
@@ -83,7 +94,13 @@ DebugWindowTab.prototype.save=function(callback) {
             callback(status);
           });
         } else {
-          throw new Error("save new item - not implemented");
+          editorAPI.newItem(data,header,function(status,data) {
+            callback(status);
+
+            if (!status) {
+              self.onNewItem(data.id);
+            }
+          });
         }
       } else {
         callback("item is not valid");
@@ -111,6 +128,8 @@ DebugWindowTab.prototype._updateCache=function(callback) {
       });
     }
   } else {
+    asdf
+    asdf
     //local data
     self._finishCacheUpdate();
   }

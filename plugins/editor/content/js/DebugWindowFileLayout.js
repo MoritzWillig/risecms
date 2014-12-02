@@ -1,4 +1,4 @@
-DebugWindowFileLayout=function() {
+DebugWindowFileLayout=function(onSaveRequest) {
   DebugWindowLayout.apply(this,[]);
 
   this.gui={
@@ -7,7 +7,9 @@ DebugWindowFileLayout=function() {
   };
 
   this.gui.editorScreen=debugWindow.gui.elements.div.clone().addClass("editFileScreen");
-  var saveButton=debugWindow.gui.elements.button.clone().click(function() { self.saveActiveItem(); }).text("save all");
+  var saveButton=debugWindow.gui.elements.button.clone().click(function() {
+    onSaveRequest(self);
+  }).text("save all");
 
   var self=this;
   this.gui.layout=debugWindow.gui.elements.div.clone().append([
