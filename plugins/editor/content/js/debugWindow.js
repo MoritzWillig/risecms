@@ -122,6 +122,12 @@ debugWindow={
         
         //set new data binding
         self._setTabByData(item,tab);
+
+        //update layout if item is currently displayed
+        var layout=self.layoutMgr.getActiveLayout();
+        if (layout.getActiveTab()!=undefined) {
+          self.displayTab(tab);
+        }
       });
       self.displayTab(tab);
     }).text("new item");
