@@ -1,3 +1,5 @@
+//TODO: this class is obsolete, remove
+
 cg=require("../../config.js");
 stat=require("../../status");
 db=require("./database").getInstance();
@@ -442,6 +444,7 @@ pageItem={
     });
   },
   setHeader:function(id,data,callback) {
+    //TODO fix sql error if data contains no fields
     var update=(typeof id!="undefined");
 
     var values=[];

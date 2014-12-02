@@ -405,7 +405,10 @@ itemInterpreter={
       //parse item normally
       
       if (!itemLink.isValid()) {
-        callback(itemLink.getStatusString());
+        var evtObj={final:itemLink.getStatusString(),itemLink:itemLink,childs:childs,asChild:asChild,environment:environment};
+        plugins.trigger("item.compose.post",evtObj);
+
+        callback(evtObj.final);
         return;
       }
       
@@ -413,8 +416,10 @@ itemInterpreter={
       case "static":
         break;
       case "text":
-        //TODO: ADD ITEM PRE/POST EVENT
-        callback(item.itemStr[0]);
+        var evtObj={final:item.itemStr[0],itemLink:itemLink,childs:childs,asChild:asChild,environment:environment};
+        plugins.trigger("item.compose.post",evtObj);
+
+        callback(evtObj.final);
         return;
       case "script":
         var chLocal=childs.slice();
@@ -425,21 +430,31 @@ itemInterpreter={
           environment:environment,
           childs:chLocal
         },function(result) {
-          //TODO: ADD ITEM PRE/POST EVENT
-          callback(result);
+          var evtObj={final:result,itemLink:itemLink,childs:childs,asChild:asChild,environment:environment};
+          plugins.trigger("item.compose.post",evtObj);
+
+          callback(evtObj.final);
         },((item.header.name!="")?item.header.name:(item.header.path)?item.header.path:"")+"["+item.header.id+"]");
         return;
       case "data":
-        //TODO: ADD ITEM PRE/POST EVENT
-        callback((new stat.states.items.INVALID_ITEM_FILE({
+        var final=(new stat.states.items.INVALID_ITEM_FILE({
           type:item.header.type
-        })).toString());
+        })).toString();
+
+        var evtObj={final:final,itemLink:itemLink,childs:childs,asChild:asChild,environment:environment};
+        plugins.trigger("item.compose.post",evtObj);
+
+        callback(evtObj.final);
         return;
       default:
-        //TODO: ADD ITEM PRE/POST EVENT
-        callback((new stat.states.items.UNKNOWN_RESOURCE_TYPE({
+        var final=(new stat.states.items.UNKNOWN_RESOURCE_TYPE({
           type:item.header.type
-        })).toString());
+        })).toString();
+
+        var evtObj={final:final,itemLink:itemLink,childs:childs,asChild:asChild,environment:environment};
+        plugins.trigger("item.compose.post",evtObj);
+
+        callback(evtObj.final);
         return;
       }
 
@@ -546,7 +561,7 @@ itemInterpreter={
   plugins.registerEvent("item.compose.pre");
   /**
    * @event item.compose.post
-   * @param {sting} final the parsed string which will be returned
+   * @param {string} final the parsed string which will be returned
    * @param {ItemLink} itemLink item link to be composed
    * @param {[ItemLink]} childs array of childs
    * @param {bool} asChild wether or not the item link is parsed as a child
