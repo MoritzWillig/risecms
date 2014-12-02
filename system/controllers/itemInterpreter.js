@@ -91,6 +91,7 @@ itemInterpreter={
 
     function interpretStatic() {
       var str=root.file;
+      root.file=null; //free memory
       
       //extract subitem strings
       var lastItemEnd=0;

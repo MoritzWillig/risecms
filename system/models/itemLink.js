@@ -19,9 +19,12 @@ function ItemLink(item,data,modifiers) {
     this.item=item;
     
     this.setData(data);
+    this.replacements=[];
 
     if (typeof modifiers!="undefined") {
       this.modifiers=modifiers;
+    } else {
+      this.modifiers={post:[]};
     }
   }
 }
