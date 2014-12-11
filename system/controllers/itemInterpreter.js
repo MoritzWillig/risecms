@@ -1,16 +1,22 @@
-Item=require("../models/item.js");
-Script=require("../models/script.js");
-ItemLink=require("../models/itemLink.js");
-findParentheses=require("../helpers/parentheses.js").findParentheses;
-findNSurr=require("../helpers/parentheses.js").findNSurr;
-scriptEnv=new (require("./scriptEnvironment.js"))();
-DataPath=require("../models/DataPath.js");
-PathResolver=require("../helpers/pathResolver.js");
+var Item=require("../models/item.js");
+var Script=require("../models/script.js");
+var ItemLink=require("../models/itemLink.js");
+var findParentheses=require("../helpers/parentheses.js").findParentheses;
+var findNSurr=require("../helpers/parentheses.js").findNSurr;
+var scriptEnv=new (require("./scriptEnvironment.js"))();
+var DataPath=require("../models/DataPath.js");
+var PathResolver=require("../helpers/pathResolver.js");
 
-plugins=require("./pluginHandler.js");
+var plugins=require("./pluginHandler.js");
 
+//load item builders
+var StaticBuilder=require("./builders/staticBuilder.js");
+var TextBuilder=require("./builders/textBuilder.js");
+var ScriptBuilder=require("./builders/scriptBuilder.js");
+var DataBuilder=require("./builders/dataBuilder.js");
+var FallbackBuilder=require("./builders/fallbackBuilder.js");
 
-itemInterpreter={
+var itemInterpreter={
   /**
    * loads an item from a given id
    * @param  {string/int}   id       id, name or path of item
@@ -19,7 +25,7 @@ itemInterpreter={
    * @return {ItemLink} returns an itemlink holding the item object (the item does not need to be loaded at this point)
    * @async
    */
-  create:function(id,asPath,callback) { console.log("loading",id);
+  create:function create(id,asPath,callback) { console.log("loading",id);
     var root=new Item(id,asPath);
     root.loadHeader(cbInterpret);
 
@@ -60,7 +66,7 @@ itemInterpreter={
    * @sync
    * @async
    */
-  parse:function(link,callback) {
+  parse:function parse(link,callback) {
     var root=link.item;
     var itemLoaded=false;
     var parentLoaded=false;
@@ -181,7 +187,12 @@ itemInterpreter={
           //extract script
           if (s.length!=0) {
             script=new Script();
-            var e=script.loadText(s);
+            var e=script.loadText(
+              s,
+              ["itemLink","item","data","environment","childs","module","require","__dirname"]
+              ,"ScriptEnvironment"+(scriptName?":"+scriptName:"")
+            ); //TODO create Script with scriptEnvironment and add module, require & __dirname args there
+
             if (e!=null) {
               //throw error
               root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
@@ -330,9 +341,15 @@ itemInterpreter={
     }
 
     function interpretScript() {
+      var scriptName=scriptEnv.getScriptName(link.item);
       var path=root.resolveIdPath();
       var script=new Script();
-      var e=script.loadFile(path);
+      var e=script.loadFile(
+        path,
+        ["itemLink","item","data","environment","childs","module","require","__dirname"]
+        ,"ScriptEnvironment"+(scriptName?":"+scriptName:"")
+      ); //TODO create Script with scriptEnvironment and add module, require & __dirname args there
+
       if (e!=null) {
         root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
           action:"parsing script",
@@ -389,7 +406,7 @@ itemInterpreter={
    * @async
    * @sync
    */
-  compose:function(itemLink,callback,childs,asChild,environment) {
+  compose:function compose(itemLink,callback,childs,asChild,environment) {
     if (typeof childs=="undefined") { childs=[]; }
     if (typeof asChild=="undefined") { asChild=false; }
     if (typeof environment=="undefined") { environment={}; }
@@ -402,7 +419,7 @@ itemInterpreter={
       var link=new ItemLink(item.staticParent);
       itemInterpreter.compose(link,callback,chLocal,false,environment);
     } else {
-      //parse item normally
+      //parse item
       
       if (!itemLink.isValid()) {
         var evtObj={final:itemLink.getStatusString(),itemLink:itemLink,childs:childs,asChild:asChild,environment:environment};
@@ -412,140 +429,33 @@ itemInterpreter={
         return;
       }
       
+      var builder=undefined;
+      var builderCallback=function(result) {
+        var evtObj={final:result,itemLink:itemLink,childs:childs,asChild:asChild,environment:environment};
+        plugins.trigger("item.compose.post",evtObj);
+
+        callback(evtObj.final);
+      };
+
       switch (item.header.type) {
       case "static":
+        builder=new StaticBuilder(builderCallback,itemLink,environment,childs,asChild,this);
         break;
       case "text":
-        var evtObj={final:item.itemStr[0],itemLink:itemLink,childs:childs,asChild:asChild,environment:environment};
-        plugins.trigger("item.compose.post",evtObj);
-
-        callback(evtObj.final);
-        return;
+        builder=new TextBuilder(builderCallback,itemLink,environment,childs,asChild);
+        break;
       case "script":
-        var chLocal=childs.slice();
-        scriptEnv.run(item.script,{
-          item:item,
-          itemLink:itemLink,
-          data:itemLink.data,
-          environment:environment,
-          childs:chLocal
-        },function(result) {
-          var evtObj={final:result,itemLink:itemLink,childs:childs,asChild:asChild,environment:environment};
-          plugins.trigger("item.compose.post",evtObj);
-
-          callback(evtObj.final);
-        },((item.header.name!="")?item.header.name:(item.header.path)?item.header.path:"")+"["+item.header.id+"]");
-        return;
+        builder=new ScriptBuilder(builderCallback,itemLink,environment,childs,asChild);
+        break;
       case "data":
-        var final=(new stat.states.items.INVALID_ITEM_FILE({
-          type:item.header.type
-        })).toString();
-
-        var evtObj={final:final,itemLink:itemLink,childs:childs,asChild:asChild,environment:environment};
-        plugins.trigger("item.compose.post",evtObj);
-
-        callback(evtObj.final);
-        return;
+        builder=new DataBuilder(builderCallback,itemLink,environment,childs,asChild);
+        break;
       default:
-        var final=(new stat.states.items.UNKNOWN_RESOURCE_TYPE({
-          type:item.header.type
-        })).toString();
-
-        var evtObj={final:final,itemLink:itemLink,childs:childs,asChild:asChild,environment:environment};
-        plugins.trigger("item.compose.post",evtObj);
-
-        callback(evtObj.final);
-        return;
+        builder=new FallbackBuilder(builderCallback,itemLink,environment,childs,asChild);
+        break;
       }
 
-      var cs={};
-      var itemsCt=1;
-      for (var i=0; i<item.itemStr.length; i++) {
-        var s=item.itemStr[i];
-
-        itemsCt++;
-        if (typeof s!="string") {
-          if (s instanceof ItemLink) {
-            if (s.item.isValid()) {
-              var chLocal=childs.slice();
-              itemInterpreter.compose(s,(function(i) { return function(itemStr) {
-                cs[i]=itemStr;
-                itemCb();
-              }; })(i),chLocal,false,environment);
-            } else {
-              cs[i]=
-                s.item.statusHeader.toString()+"\n"+
-                s.item.statusFile  .toString()+"\n";
-              itemCb();
-            }
-            
-          } else {
-            //is variable
-            //lookup data from data scope
-
-            /*
-              child - data delivered from child
-              data - inline or item data
-              environment - environment data object
-              plugins - plugin specific data - planned - to be done
-            */
-            (function(i) {
-              PathResolver.follow(new DataPath(s),itemLink,childs,environment,function(status,data) {
-                if (stat.isSuccessfull(status)) {
-                  switch (typeof data) {
-                  case "boolean":
-                    cs[i]=""+data;
-                    break;
-                  case "string":
-                  case "number":
-                  case "symbol":
-                    cs[i]=data;
-                    break;
-                  case "object":
-                    if (data==null) {
-                      cs[i]=""+data;
-                    } else {
-                      cs[i]=(new stat.states.items.INVALID_VARIABLE_TYPE({"path":s.join(".")})).toString();
-                    }
-                    break;
-                  case "function": //functions are currently not allowed. use script items
-                  case "undefined":
-                    cs[i]=(new stat.states.items.UNKNOWN_VARIABLE({"path":s.join(".")})).toString();
-                    break;
-                  default:
-                    cs[i]=(new stat.states.items.UNKNOWN_VARIABLE({"path":s.join("."),"msg":"unkown type"})).toString();
-                    break;
-                  }
-                } else {
-                  cs[i]=status.toString();
-                }
-                itemCb();
-              });
-            })(i);
-          }
-        } else {
-          //is plaintext
-          cs[i]=s;
-          itemCb();
-        }
-      }
-      itemCb();
-
-      function itemCb() {
-        itemsCt--;
-        if (itemsCt==0) {
-          var final="";
-          for (var i=0; cs[i]!=undefined; i++) {
-            final+=cs[i];
-          }
-          //TODO: CALL ITEM SCRIPT
-
-          var evtObj={final:final,itemLink:itemLink,childs:childs,asChild:asChild,environment:environment};
-          plugins.trigger("item.compose.post",evtObj);
-
-          callback(evtObj.final);
-        }
-      }
+      builder.build();
     }
   }
 };

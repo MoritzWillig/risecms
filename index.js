@@ -1,5 +1,3 @@
-heapdump=require("heapdump")
-
 //load configuration
 var cg=require('./config.js');
 var nitem=require("./system/models/pageitem.js");

@@ -1,7 +1,7 @@
 db=require("./database.js").getInstance();
 cg=require("../../config.js");
 stat=require("../../status.js");
-bcrypt=require("bcryptjs");
+bcrypt=require("bcrypt");
 
 /**
  * User representing a user

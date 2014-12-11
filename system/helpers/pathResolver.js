@@ -1,5 +1,6 @@
-stat=require("../../status.js");
-DataPath=require("../models/DataPath.js");
+var stat=require("../../status.js");
+var DataPath=require("../models/DataPath.js");
+var ItemLink=require("../models/itemLink.js");
 
 PathResolver={
 
@@ -15,7 +16,7 @@ PathResolver={
    * @async
    * @sync
    */
-  follow:function(datapath,itemlink,childs,environment,callback,forceSync,resPaths) {
+  follow:function(datapath,itemlink,childs,environment,callback,forceSync,resPaths,itemInterpreter) {
     if (!forceSync) { forceSync=false; }
     if (!resPaths) {
       resPaths=[datapath];
