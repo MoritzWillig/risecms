@@ -63,7 +63,9 @@ app.use(function(req,res,next) {
       next();
     });
   } else {
-    throw new Error("no session found");
+    var msg="no http session available";
+    var err=new Error(msg);
+    handleError(err,msg,req,res);
   }
 });
 
@@ -149,9 +151,14 @@ app.use('/', function(req, res) {
 });
 
 app.use(function(err,req,res) {
-  console.error(err.stack);
-  res.send(500,"Server error");
+  handleError(err,"internal error",req,res);
 });
+
+function handleError(err,msg,req,res) {
+  console.error("Error:"+msg);
+  console.error(err.stack);
+  res.send(500,"<h1>500 - Internal server error</h1>\n"+(msg?msg:""));
+}
 
 var server = app.listen(cg.http.port, cg.http.host, function() {
   console.log('Listening on port %d', server.address().port);
