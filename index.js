@@ -55,12 +55,16 @@ app.use(express_session({
 }));
 
 app.use(function(req,res,next) {
-  var session=req.session;
-  new user(session.user?session.user:undefined,function(user) {
-    req.user=user;
-    //console.log(user.status.toString());
-    next();
-  });
+  if (req.session) {
+    var session=req.session;
+    new user(session.user?session.user:undefined,function(user) {
+      req.user=user;
+      //console.log(user.status.toString());
+      next();
+    });
+  } else {
+    throw new Error("no session found");
+  }
 });
 
 /*
