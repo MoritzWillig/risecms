@@ -1,8 +1,9 @@
 
 config={
   http:{
-    host:"%http.host%",
-    port:"%http.port%"
+    host:"%http.host%", //internal address to bind the server to
+    port:"%http.port%",
+    gateway:"http://%https.host%" //public url
   },
   database:{
     host:"%db.host%",

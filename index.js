@@ -116,7 +116,7 @@ app.use("/",debugRouter);
  */
 app.use('/', function(req, res) {
   var environment={
-    host:"http://"+cg.http.host+((cg.http.port==80)?"":(":"+cg.http.port)),
+    host:cg.http.gateway, //"http://"+cg.http.host+((cg.http.port==80)?"":(":"+cg.http.port)),
     title:"Test",
     req:req,
     res:res
