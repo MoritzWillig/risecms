@@ -77,7 +77,7 @@ PathResolver={
         return {err:"data item is invalid"};
       } else {
         if ((item.header) && (item.header.type=="data")) {
-          return {data:h.data};
+          return {data:item.dataObj};
         } else {
           return {data:{}};
         }
@@ -112,7 +112,7 @@ PathResolver={
         //check inline data
         var nextSection=path[pathIndex+1];
         //check if the item is to be composed or its data accessed
-        if ((nextSection="text") && (pathIndex+1==path.length-1)) {
+        if ((nextSection=="text") && (pathIndex+1==path.length-1)) {
           currentValue.end=true;
           rpDiscard=true;
 
