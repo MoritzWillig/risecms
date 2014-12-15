@@ -134,7 +134,7 @@ debugWindow={
     this.gui.items.append(newButton);
 
     this.layoutMgr.display(undefined,this.defaultLayout);
-    this.setVisibility(true);
+    this.setVisibility(false);
   },
 
   isVisible:function() {
