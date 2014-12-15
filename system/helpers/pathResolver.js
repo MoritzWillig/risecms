@@ -126,12 +126,24 @@ PathResolver={
               asChild=true;
             }
 
+            var localChilds;
+            if ((childs.length!=0) && (childs[childs.length-1]==currentValue.h)) {
+              //if we are composing childs and we are going back the child chain
+              //the remaining childs in the chain are childs of our child link
+              //TODO: check if this implementation holds true. (note that we are using itemLink, which are identifing links)
+              //TODO: check if cases exist, were we are parsing an item which has childs, but passing an empty child chain were we should not
+              localChilds=childs.slice();
+              localChilds.pop();
+            } else {
+              localChilds=[];
+            }
+
             itemInterpreter.compose(
               currentValue.h,
               function(itemStr) {
                 callback(new stat.states.items.OK(),itemStr);
               },
-              [],asChild,environment
+              localChilds,asChild,environment
             );
           }
         } else {
