@@ -1,30 +1,39 @@
-Item=require("../models/item.js");
-Script=require("../models/script.js");
-ItemLink=require("../models/itemLink.js");
-findParentheses=require("../helpers/parentheses.js").findParentheses;
-findNSurr=require("../helpers/parentheses.js").findNSurr;
-scriptEnv=new (require("./scriptEnvironment.js"))();
+var Item=require("../models/item.js");
+var Script=require("../models/script.js");
+var ItemLink=require("../models/itemLink.js");
+var findParentheses=require("../helpers/parentheses.js").findParentheses;
+var findNSurr=require("../helpers/parentheses.js").findNSurr;
+var scriptEnv=new (require("./scriptEnvironment.js"))();
+var DataPath=require("../models/DataPath.js");
+var PathResolver=require("../helpers/pathResolver.js");
 
-plugins=require("./pluginHandler.js");
+var plugins=require("./pluginHandler.js");
 
+//load item builders
+var StaticBuilder=require("./builders/staticBuilder.js");
+var TextBuilder=require("./builders/textBuilder.js");
+var ScriptBuilder=require("./builders/scriptBuilder.js");
+var DataBuilder=require("./builders/dataBuilder.js");
+var FallbackBuilder=require("./builders/fallbackBuilder.js");
 
-itemInterpreter={
+var itemInterpreter={
   /**
    * loads an item from a given id
    * @param  {string/int}   id       id, name or path of item
    * @param  {bool}   asPath   whether or not the item id is interpreted as a path
-   * @param  {Function} callback callback to be called when the item is loaded
-   * @return {Item} returns the item object (the item does not need to be loaded at this point)
+   * @param  {Function} callback (ItemLink itemlink) callback to be called when the item is loaded
+   * @return {ItemLink} returns an itemlink holding the item object (the item does not need to be loaded at this point)
+   * @async
    */
-  create:function(id,asPath,callback) { console.log("loading",id);
-    if (callback==undefined) { callback=function() {}; }
-    
+  create:function create(id,asPath,callback) { console.log("loading",id);
     var root=new Item(id,asPath);
     root.loadHeader(cbInterpret);
 
+    var link=new ItemLink(root);
+
     function cbInterpret() {
       if (!root.isValid()) {
-        callback(root);
+        callback(link);
         return;
       }
 
@@ -38,24 +47,27 @@ itemInterpreter={
 
       function cbFile(item) {
         if (!root.isValid()) {
-          callback(root);
+          callback(link);
           return;
         }
 
-        itemInterpreter.parse(root,callback);
+        itemInterpreter.parse(link,callback);
       }
     }
 
-    return root;
+    return link;
   },
 
   /**
    * parses the file attribute of an item
-   * @param  {item}   root     item to be parsed
-   * @param  {Function} callback callback to be called when the item is loaded
-   * @return {Item} returns the item object (the item does not need to be loaded at this point)
+   * @param  {ItemLink}   link     link holding the item to be parsed
+   * @param  {Function} callback (ItemLink itemlink) callback to be called when the item is loaded
+   * @return {ItemLink} returns the item object (the item does not need to be loaded at this point)
+   * @sync
+   * @async
    */
-  parse:function(root,callback) {
+  parse:function parse(link,callback) {
+    var root=link.item;
     var itemLoaded=false;
     var parentLoaded=false;
 
@@ -85,6 +97,7 @@ itemInterpreter={
 
     function interpretStatic() {
       var str=root.file;
+      root.file=null; //free memory
       
       //extract subitem strings
       var lastItemEnd=0;
@@ -174,7 +187,12 @@ itemInterpreter={
           //extract script
           if (s.length!=0) {
             script=new Script();
-            var e=script.loadText(s);
+            var e=script.loadText(
+              s,
+              ["itemLink","item","data","environment","childs","module","require","__dirname"]
+              ,"ScriptEnvironment"+(scriptName?":"+scriptName:"")
+            ); //TODO create Script with scriptEnvironment and add module, require & __dirname args there
+
             if (e!=null) {
               //throw error
               root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
@@ -188,7 +206,7 @@ itemInterpreter={
             }
           }
 
-          if (addData!=undefined) {
+          if ((addData!=undefined) && (addData!="")) {
             if (isInline(addData)) {
               //parse inline data
               addData=addData.substr(1,addData.length);
@@ -196,9 +214,11 @@ itemInterpreter={
                 addData=JSON.parse(addData);
                 dataCb();
               } catch(e) {
+                var inlData=addData;
                 addData=new Item();
                 addData.statusFile=new stat.states.items.INVALID_ITEM_FILE({
                   action:"parsing inline JSON",
+                  dataStr:inlData,
                   error:e,
                   errorStr:e.toString()
                 });
@@ -207,7 +227,8 @@ itemInterpreter={
             } else {
               //load inline data from item
               subItemCt++;
-              itemInterpreter.create(addData,false,(function(i,id,script) { return function(item) {
+              itemInterpreter.create(addData,false,(function(i,id,script) { return function(itemL) {
+                var item=itemL.item;
                 subItemCt--;
                 if (!item.isValid()) {
                   //data item has to be valid
@@ -215,9 +236,10 @@ itemInterpreter={
                 } else {
                   //data item has to be from type "data"
                   if (item.header.type=="data") {
-                    addData=item.dataObj;
+                    addData=item;
                   } else {
-                    addData=new stat.states.items.INVALID_ITEM_FILE({
+                    addData=new Item();
+                    addData.statusFile=new stat.states.items.INVALID_ITEM_FILE({
                       action:"loading data item - item has to be of type data",
                     });
                   }
@@ -237,13 +259,55 @@ itemInterpreter={
               subItemCt++;
               
               //load sub item
-              root.itemStr[ai]=new ItemLink(
-                itemInterpreter.create(aid,false,subItemCallback),
-                aaddData,
-                {post:[ascript]}
-              );
+              var il=itemInterpreter.create(aid,false,subDataParse);
               
-              root.itemStr[ai].item.parent=root;
+              function subDataParse() {
+                //search data paths
+                var cpath=[];
+                /**
+                 * replaces references to other data with DataPaths
+                 * @param  {object} obj object to search in
+                 * @return {object}     object with replaced references
+                 */
+                function repl(obj) {
+                  //TODO: fails if obj itself is an DataPath
+                  for (var c in obj) {
+                    var curr=obj[c];
+                    var to=typeof curr;
+                    if (to=="object") {
+                      cpath.push(c);
+                      repl(curr);
+                      cpath.pop();
+                    } else {
+                      if ((to=="string") && (curr.length>2) && (curr[0]=="$") && (curr[curr.length-1]=="$")) {
+                        //found data path
+                        var dr=new DataPath(curr.substr(1,curr.length-2)); var ts=(+new Date());
+                        //set including parent to allow access to the data scope while resolving
+                        dr.scope={ ts:ts,
+                          root:link,
+                          childs:[] //<- add childs here
+                          //TODO: childs have to be known at this point, move child array assembly from compose to parse
+                        };
+                        obj[c]=dr;
+                        il.replacements.push({
+                          path:dr,
+                          location:cpath.slice().push(c)
+                        });
+                      }
+                    }
+                  }
+                  return obj;
+                }
+                
+                il.setData(aaddData);
+                il.data=repl(il.data);
+                il.modifiers={post:[ascript]}
+                il.item.parent=root;
+
+                root.itemStr[ai]=il;
+
+                subItemCallback();
+              }
             } else {
               //as variable path - evaluated on compose
               root.itemStr[ai]=aid.split(".");
@@ -277,9 +341,15 @@ itemInterpreter={
     }
 
     function interpretScript() {
+      var scriptName=scriptEnv.getScriptName(link.item);
       var path=root.resolveIdPath();
       var script=new Script();
-      var e=script.loadFile(path);
+      var e=script.loadFile(
+        path,
+        ["itemLink","item","data","environment","childs","module","require","__dirname"]
+        ,"ScriptEnvironment"+(scriptName?":"+scriptName:"")
+      ); //TODO create Script with scriptEnvironment and add module, require & __dirname args there
+
       if (e!=null) {
         root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
           action:"parsing script",
@@ -307,7 +377,7 @@ itemInterpreter={
       var parent=itemInterpreter.create(parentName,false,function() {
         parentLoaded=true;
         checkCallback();
-      },undefined);
+      },undefined).item;
       root.staticParent=parent;
     } else {
       parentLoaded=true;
@@ -318,11 +388,11 @@ itemInterpreter={
     function checkCallback(addItemLoaded) {
       if (addItemLoaded==true) { itemLoaded=true; }
       if (itemLoaded && parentLoaded) {
-        callback(root);
+        callback(link);
       }
     }
     
-    return root;
+    return link;
   },
 
   /**
@@ -333,8 +403,10 @@ itemInterpreter={
    * @param  {bool}   asChild  whether or not this item is parsed as child
    * //@param  {[[ItemLink]]}   data     additional data scopes which can be accessed throughout parsing
    * @param  {[Object]} environment environment data scope
+   * @async
+   * @sync
    */
-  compose:function(itemLink,callback,childs,asChild,environment) {
+  compose:function compose(itemLink,callback,childs,asChild,environment) {
     if (typeof childs=="undefined") { childs=[]; }
     if (typeof asChild=="undefined") { asChild=false; }
     if (typeof environment=="undefined") { environment={}; }
@@ -342,199 +414,48 @@ itemInterpreter={
 
     if ((!asChild) && (item.staticParent!=undefined)) {
       //compose parent - this item (if needed) will be composed again as child (=> asChild==true)
-      childs.push(itemLink);
+      var chLocal=childs.slice();
+      chLocal.push(itemLink);
       var link=new ItemLink(item.staticParent);
-      itemInterpreter.compose(link,callback,childs,false,environment);
-      childs.pop();
+      itemInterpreter.compose(link,callback,chLocal,false,environment);
     } else {
-      //parse item normally
+      //parse item
       
       if (!itemLink.isValid()) {
-        callback(itemLink.getStatusString());
+        var evtObj={final:itemLink.getStatusString(),itemLink:itemLink,childs:childs,asChild:asChild,environment:environment};
+        plugins.trigger("item.compose.post",evtObj);
+
+        callback(evtObj.final);
         return;
       }
       
+      var builder=undefined;
+      var builderCallback=function(result) {
+        var evtObj={final:result,itemLink:itemLink,childs:childs,asChild:asChild,environment:environment};
+        plugins.trigger("item.compose.post",evtObj);
+
+        callback(evtObj.final);
+      };
+
       switch (item.header.type) {
       case "static":
+        builder=new StaticBuilder(builderCallback,itemLink,environment,childs,asChild,this);
         break;
       case "text":
-        callback(item.itemStr[0]);
-        return;
+        builder=new TextBuilder(builderCallback,itemLink,environment,childs,asChild);
+        break;
       case "script":
-        scriptEnv.run(item.script,{
-          item:item,
-          data:itemLink.data,
-          environment:environment
-        },function(result) {
-          callback(result);
-        },((item.header.name!="")?item.header.name:(item.header.path)?item.header.path:"")+"["+item.header.id+"]");
-        return;
+        builder=new ScriptBuilder(builderCallback,itemLink,environment,childs,asChild);
+        break;
       case "data":
-        callback("%%%not implemented yet%%%");
-        return;
+        builder=new DataBuilder(builderCallback,itemLink,environment,childs,asChild);
+        break;
       default:
-        callback((new stat.states.items.UNKNOWN_RESOURCE_TYPE()).toString());
-        return;
+        builder=new FallbackBuilder(builderCallback,itemLink,environment,childs,asChild);
+        break;
       }
 
-      var cs={};
-      var itemsCt=1;
-      for (var i=0; i<item.itemStr.length; i++) {
-        var s=item.itemStr[i];
-
-        itemsCt++;
-        if (typeof s!="string") {
-          if (s instanceof ItemLink) {
-            if (s.item.isValid()) {
-              //TODO: is item in this case really a child, to the subitem?
-              //create copy of childs, because of possibly async calls
-              var chLocal=childs.slice();
-              chLocal.push(itemLink);
-
-              itemInterpreter.compose(s,(function(i) { return function(itemStr) {
-                cs[i]=itemStr;
-                itemCb();
-              }; })(i),chLocal,false,environment);
-            } else {
-              cs[i]=
-                s.item.statusHeader.toString()+"\n"+
-                s.item.statusFile  .toString()+"\n";
-              itemCb();
-            }
-            
-          } else {
-            //is variable
-            //lookup data from data scope
-
-            /*
-            child - data delivered from child
-            data - inline or item data
-            environment - environment data object
-            plugins - plugin specific data - planned - to be done
-            */
-            var v=s;
-            if (v.length<=1) {
-              cs[i]=(new stat.states.items.INVALID_ITEM_FILE({action:"variable contains no path"})).toString();
-              itemCb();
-            } else {
-              var r=undefined;
-              switch (v[0]) {
-              case "child":
-                if (childs.length==0) {
-                  cs[i]=(new stat.states.items.ITEM_HAS_NO_CHILD()).toString();
-                  itemCb();
-                } else {
-                  var chLocal=childs.slice();
-                  chLocal.pop();
-                  
-                  var link=new ItemLink(childs[childs.length-1].item);
-                  itemInterpreter.compose(
-                    link,(function(i) { return function(itemStr) {
-                      cs[i]=itemStr;
-                      itemCb();
-                    }; })(i),
-                    chLocal,true,environment
-                  );
-                }
-                break;
-              case "data":
-                //search inline data
-                //search local data scope
-                if ((itemLink.data!=undefined) && (itemLink.data[v[1]]!=undefined)) {
-                  r=itemLink.data;
-                } else {
-                  //search child tree
-                  for (var c=childs.length-1; c>=0; c--) {
-                    if ((childs[c].data) && (childs[c].data[v[1]])) {
-                      r=childs[c].data;
-                      break;
-                    }
-                  }
-                }
-
-                if (r!=undefined) {
-                  follow(r,v);
-                } else {
-                  cs[i]=(new stat.states.items.UNKNOWN_VARIABLE({"path":v.join(".")})).toString();
-                  itemCb();
-                }
-                break;
-              case "global":
-                r=environment;
-                follow(r,v);
-                break;
-              default:
-                cs[i]=(new stat.states.items.UNKNOWN_VARIABLE_ROOT({rootName:v[0]})).toString();
-                itemCb();
-              }
-
-              function follow(root,path) {
-                for (var c=1; c<path.length; c++) {
-                  if (typeof root[path[c]]!="undefined") {
-                    root=root[path[c]];
-                  } else {
-                    root=undefined;
-                    break;
-                  }
-                }
-                switch (typeof root) {
-                case "boolean":
-                  cs[i]=root?"true":"false";
-                  break;
-                case "string":
-                case "number":
-                case "symbol":
-                  cs[i]=root;
-                  break;
-                case "object":
-                  if (root==null) {
-                    cs[i]="null";
-                  } else {
-                    if (root instanceof Item) {
-                      cs[i]="%%%Item%%%";
-                    } else {
-                      cs[i]=(new stat.states.items.INVALID_VARIABLE_TYPE({"path":v.join(".")})).toString();
-                    }
-                  }
-                  break;
-                case "function":
-                  //functions are not allowed
-                case "undefined":
-                  //follow() would have already thrown an error if undefined
-                  cs[i]=(new stat.states.items.UNKNOWN_VARIABLE({"path":v.join(".")})).toString();
-                  break;
-                default:
-                  cs[i]=(new stat.states.items.UNKNOWN_VARIABLE({"path":v.join("."),"msg":"unkown type"})).toString();
-                  break;
-                }
-                itemCb();
-              }
-            }
-          }
-        } else {
-          //is plaintext
-          cs[i]=s;
-          itemCb();
-        }
-      }
-      itemCb();
-
-      function itemCb() {
-        itemsCt--;
-        if (itemsCt==0) {
-          var final=(cs[0]==undefined)?"":cs[0];
-          for (var i=1; cs[i]!=undefined; i++) {
-            final+=cs[i];
-            
-            //TODO: CALL ITEM SCRIPT
-          }
-
-          var evtObj={final:final,itemLink:itemLink,childs:childs,asChild:asChild,environment:environment};
-          plugins.trigger("item.compose.post",evtObj);
-
-          callback(evtObj.final);
-        }
-      }
+      builder.build();
     }
   }
 };
@@ -550,7 +471,7 @@ itemInterpreter={
   plugins.registerEvent("item.compose.pre");
   /**
    * @event item.compose.post
-   * @param {sting} final the parsed string which will be returned
+   * @param {string} final the parsed string which will be returned
    * @param {ItemLink} itemLink item link to be composed
    * @param {[ItemLink]} childs array of childs
    * @param {bool} asChild wether or not the item link is parsed as a child

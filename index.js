@@ -55,12 +55,18 @@ app.use(express_session({
 }));
 
 app.use(function(req,res,next) {
-  var session=req.session;
-  new user(session.user?session.user:undefined,function(user) {
-    req.user=user;
-    //console.log(user.status.toString());
-    next();
-  });
+  if (req.session) {
+    var session=req.session;
+    new user(session.user?session.user:undefined,function(user) {
+      req.user=user;
+      //console.log(user.status.toString());
+      next();
+    });
+  } else {
+    var msg="no http session available";
+    var err=new Error(msg);
+    handleError(err,msg,req,res);
+  }
 });
 
 /*
@@ -96,12 +102,21 @@ plugins.setup(app,{
 });
 
 
+debugRouter=express.Router();
+debugRouter.use('/heapdump', function(req, res, next) {
+  var path="./snapshots/heapdump_"+(+new Date())+".heapsnapshot";
+  heapdump.writeSnapshot(fsanchor.resolve(path,"root"));
+  console.log("heapsnapshot",path);
+  res.send("ok");
+});
+app.use("/",debugRouter);
+
 /*
  * CMS routing
  */
 app.use('/', function(req, res) {
   var environment={
-    host:"http://"+cg.http.host+((cg.http.port==80)?"":(":"+cg.http.port)),
+    host:cg.http.gateway, //"http://"+cg.http.host+((cg.http.port==80)?"":(":"+cg.http.port)),
     title:"Test",
     req:req,
     res:res
@@ -110,25 +125,24 @@ app.use('/', function(req, res) {
   var evtObj={req:req,res:res,environment:environment};
   plugins.trigger("page.pre",evtObj);
   
-  var pageItem=ItemInterpreter.create(req.url,true,function(item) {
-    if (item.isValid()) {
-      var evtObj={req:req,res:res,item:item,environment:environment};
+  var pageItemLink=ItemInterpreter.create(req.url,true,function(itemLink) {
+    if (itemLink.item.isValid()) {
+      var evtObj={req:req,res:res,itemLink:itemLink,item:itemLink.item,environment:environment};
       plugins.trigger("page.preCompose",evtObj);
       
-      var link=new ItemLink(item);
-      ItemInterpreter.compose(link,function(final) {
+      ItemInterpreter.compose(itemLink,function(final) {
         pagePost(200,final);
       },undefined,undefined,environment);
     } else {
-      if (item.hasHeaderErr()) {
-        pagePost(404,"Error - "+item.statusHeader.toString());
+      if (itemLink.item.hasHeaderErr()) {
+        pagePost(404,"Error - "+itemLink.item.statusHeader.toString());
       } else {
-        pagePost(404,"Error - "+item.statusFile.toString());
+        pagePost(404,"Error - "+itemLink.item.statusFile.toString());
       }
     }
 
     function pagePost(code,pageStr) {
-      var evtObj={req:req,res:res,code:code,item:item,page:pageStr,environment:environment};
+      var evtObj={req:req,res:res,code:code,itemLink:itemLink,item:itemLink.item,page:pageStr,environment:environment};
       plugins.trigger("page.post",evtObj);
       res.send(evtObj.code,evtObj.page);
     }
@@ -137,9 +151,14 @@ app.use('/', function(req, res) {
 });
 
 app.use(function(err,req,res) {
-  console.error(err.stack);
-  res.send(500,"Server error");
+  handleError(err,"internal error",req,res);
 });
+
+function handleError(err,msg,req,res) {
+  console.error("Error:"+msg);
+  console.error(err.stack);
+  res.send(500,"<h1>500 - Internal server error</h1>\n"+(msg?msg:""));
+}
 
 var server = app.listen(cg.http.port, cg.http.host, function() {
   console.log('Listening on port %d', server.address().port);
@@ -158,6 +177,7 @@ var server = app.listen(cg.http.port, cg.http.host, function() {
    * @param {Request} req http request
    * @param {Response} pes http response
    * @param {Item} item item to be composed and send
+   * @param {ItemLink} itemLink itemlink holding the item
    * @param {Object} environment environment param object
    */
   plugins.registerEvent("page.preCompose");
@@ -166,6 +186,8 @@ var server = app.listen(cg.http.port, cg.http.host, function() {
    * @param {Request} req http request
    * @param {Response} res http response
    * @param {int} code http status code
+   * @param {Item} item item to be composed and send
+   * @param {ItemLink} itemLink itemlink holding the item
    * @param {String} page composed item string 
    * @param {Object} environment environment param object
    */

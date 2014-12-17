@@ -140,6 +140,9 @@ status.states={ //tree hirachy of status codes
     IS_USER:status.proto.users.derive(-100,"The element is a user"),
     NO_USER:status.proto.users.derive(-101,"The element is no user"),
     NOT_AUTHENTICATED:status.proto.users.derive(-102,"The user was not authenticated")
+  },
+  paths:{
+    INVALID_PATH:Status.derive(600,"The path does not exist")
   }
 };
 

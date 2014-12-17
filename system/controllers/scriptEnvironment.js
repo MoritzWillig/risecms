@@ -1,10 +1,10 @@
-stat=require("../../status.js");
-cg=require("../../config.js");
-vm=require("vm");
-domain=require("domain");
-fsanchor=require("../../fsanchor.js");
-path=require("path");
-glModule=require("module");
+var stat=require("../../status.js");
+var cg=require("../../config.js");
+var vm=require("vm");
+var domain=require("domain");
+var fsanchor=require("../../fsanchor.js");
+var path=require("path");
+var glModule=require("module");
 
 /**
  * Includes code and runs it in the current context.
@@ -13,15 +13,23 @@ glModule=require("module");
  * exception handling is done (especially for sync code). For async functions, the code has to 
  * handle exceptions itself, to prevent the app from crashing.
  */
-function ScriptEnvironment() {
+var ScriptEnvironment=function ScriptEnvironment() {
 }
 
-ScriptEnvironment.prototype.run=function(script,env,callback,scriptName) {
-    if (!env) { env={}; }
-    //TODO: make scripts time out (introduced at node v0.11)
+ScriptEnvironment.prototype.run=function(script,args,callback) {
+    args=args?args.slice():[];
     
     var callbackTriggered=false;
     var timerHandle;
+
+    function onError() {
+      scriptCb((new stat.states.items.script.CRASH({
+        flow:"async",
+        error:e,
+        errorStr:e.toString(),
+        trace:e.stack
+      })).toString());
+    };
 
     function scriptCb(str) {
       if (timerHandle!=undefined) {
@@ -38,83 +46,37 @@ ScriptEnvironment.prototype.run=function(script,env,callback,scriptName) {
         }
       } else {
         //TODO: for now we are ignoring multiple calls from a script
+        //this could maybe logged for debugging
       }
     }
 
-    //try to catch as many errors as possible (fails ie. for sql callback)
-    var localDomain=domain.create();
-    localDomain.on("error",function() {
-      scriptCb((new stat.states.items.script.CRASH({
-        flow:"async",
-        error:e,
-        errorStr:e.toString(),
-        trace:e.stack
-      })).toString());
-    });
-
     //setup environment
-    env.module={};
-    env.module.callback=scriptCb;
-    
-    var resolveModule=function(module) {
-      if (module.charAt(0)!=='.') { return module; }
-      return fsanchor.resolve(module,"root"); //scripts paths are relative to risecms root
-    }
-    /*
-    var required={};
-    var envRequire=function(name) { var oN=name;
-      name=resolveModule(name);
-      console.log(oN,"was resolved to",name);
-
-      //exchange cache 
-      var c=require.cache;
-      //require.cache is a pointer to Module._cache, require internally looks up names over the Module._cache
-      //reference so we have to replace the cache object there (we are replacing require.cache too, in case 
-      //the nodejs code will change)
-      require.cache=envRequire.cache;
-      glModule._cache=envRequire.cache;
-
-      localDomain.enter();
-      var req=require(name);
-      localDomain.exit();
-
-      //put normal cache back
-      require.cache=c;
-      glModule._cache=c;
-      
-      return req;
-    };
-    envRequire.cache=required;
-    env.require=envRequire;
-    */
-    env.require=function(name) {
-      return require(resolveModule(name));
-    }
-
-    env.__dirname=fsanchor.resolve("./","root");
-    env.global=env;
-
-    /*
-    var incl=["console","Buffer","setTimeout","setInterval","clearTimeout","clearInterval","setImmediate","clearImmediate"];
-    for (var i in incl) {
-      var name=incl[i];
-      env[name]=global[name];
-    }
-    */
-    for (var i in global) {
-      env[i]=global[i];
-    }
+    //module
+    var module={callback:scriptCb};
+    args.push(module);
+    //require
+    args.push(function(name) {
+      //scripts paths are relative to risecms root
+      if (name.charAt(0)!=='.') { return name; }
+      name=fsanchor.resolve(name,"root"); 
+      return require(name);
+    });
+    //__dirname
+    args.push(fsanchor.resolve("./","root"));
     
     //run script
-    try {
-      localDomain.run(function() {
-        vm.runInNewContext(script.scriptText,env,{
+    
+      //since there is no way to pass an scope to
+      //runInThisContext, we set
+      
+      //localDomain.run(function() {
+      var e=script.run(args,{
           timeout:cg.system.request.items.sync_timeout,
           displayErrors:false,
-          filename:"ScriptEnvironment"+(scriptName?":"+scriptName:"")
         });
-      });
-    } catch(e) {
+      //});
+      
+    if (e) {
       scriptCb((new stat.states.items.script.CRASH({
         flow:"sync",
         error:e,
@@ -124,15 +86,27 @@ ScriptEnvironment.prototype.run=function(script,env,callback,scriptName) {
     }
     
     //check if the script was a sync call
-    if (env.str!=undefined) {
-      scriptCb(env.str);
+    if (module.str!=undefined) {
+      scriptCb(module.str);
     } else {
       //give script time to finish async
       timerHandle=setTimeout(function() {
-        scriptCb((new stat.states.items.script.TIMEOUT({flow:"async"})).toString());
+        scriptCb((new stat.states.items.script.TIMEOUT({
+          flow:"async"
+        })).toString());
       }, cg.system.request.items.async_timeout);
     }
   };
+
+ScriptEnvironment.prototype.getScriptName=function(item) {
+  var scriptName=(
+    (item.header.name!="")?
+      item.header.name:
+      (item.header.path)?item.header.path:""
+    )
+    +"["+item.header.id+"]";
+  return scriptName;
+}
 
 
 module.exports=ScriptEnvironment;
