@@ -20,7 +20,7 @@ debugWindow={
   activeTab:undefined,
 
   layoutMgr:undefined,
-  
+
   _setup:function() {
     var self=this;
 
@@ -87,7 +87,7 @@ debugWindow={
     var searchButton=this.gui.elements.div.clone().click(function() {
       tab=new DebugWindowSearchTab();
       self._setTabByData(tab,tab);
-      
+
       self.displayTab(tab);
     }).text("search item");
     this.gui.toolbar.append([
@@ -119,7 +119,7 @@ debugWindow={
           //get tab label is !=undefined
           gui.children().first().text(tab.getTabLabel());
         }
-        
+
         //set new data binding
         self._setTabByData(item,tab);
 
@@ -140,7 +140,7 @@ debugWindow={
   isVisible:function() {
     return this._visible;
   },
-  
+
   setVisibility:function(visible) {
     this._visible=visible;
 
@@ -154,7 +154,7 @@ debugWindow={
 
     return this.isVisible();
   },
-  
+
   closeEditor:function() {
     this.setVisibility(false);
   },
@@ -180,7 +180,7 @@ debugWindow={
       });
     }
   },
-  
+
   getContentDirectory:function(path) {
     var current=this._contentRoot;
     for (var i in path) {
@@ -206,7 +206,7 @@ debugWindow={
           visible:true,
           fullPath:directory.fullPath+"/"+name,
           sub:{},
-          gui:this._createDirectoryGui(name,function() { self._toogleDir(dir); })
+          gui:this._createDirectoryGui(name,function(e) { e.stopPropagation(); self._toogleDir(dir); })
         };
         directory.sub[name]=dir;
         this._appendToGui(directory,directory.sub[name]);
@@ -252,9 +252,9 @@ debugWindow={
 
   _toogleDir:function(directory) {
     directory.visible=!directory.visible;
-    directory.gui.css("display",directory.visible?"initial":"none")
+    directory.gui.content.css("display",directory.visible?"":"none")
   },
-  
+
   _createDirectoryGui:function(name,callback) {
     var title=this.gui.elements.div.clone().addClass("scrContEl").addClass("srcContNodeName").text(name);
     var content=this.gui.elements.div.clone().addClass("srcContNodeSub");
@@ -268,15 +268,15 @@ debugWindow={
     };
     return gui;
   },
-  
+
   _appendToGui:function(directory,element) {
     directory.gui.content.append(element.gui.node);
   },
-  
+
   getWindowItem:function(id) {
     return this._itemList[id];
   },
-  
+
   setWindowItem:function(item) {
     var self=this;
     var existingItem=this.getWindowItem(item.id);
@@ -291,7 +291,7 @@ debugWindow={
       });
     }
   },
-  
+
   removeWindowItem:function(id) {
     var item=this.getWindowItem(id);
     if (item!=undefined) {
@@ -299,7 +299,7 @@ debugWindow={
       delete this._itemList[id];
     }
   },
-  
+
   displayItem:function(item) {
     if ((item.id!=undefined) && (this.getWindowItem(item.id)!=item)) {
       this.setWindowItem(item);
@@ -312,10 +312,10 @@ debugWindow={
       });
       this._setTabByData(item,tab);
     }
-    
+
     this.displayTab(tab);
   },
-  
+
   displayFile:function(file) {
     if (!(file instanceof DebugWindowFile)) {
       throw new Error("data is no file");
@@ -388,7 +388,7 @@ debugWindow={
     if (gui==undefined) {
       throw new Error("unknown tab");
     }
-    
+
     gui.remove();
     this.tabGuis.delete(tab);
 
@@ -428,7 +428,7 @@ debugWindow={
     this.tabsByData.set(data,tab);
     this.dataByTabs.set(tab,data);
   },
-  
+
   storeTab:function() {
     if ((this.activeTab) && (this.activeTab.isValid())) {
       this.activeTab.setData(this.getData());
