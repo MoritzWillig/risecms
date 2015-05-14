@@ -124,12 +124,12 @@ app.use('/', function(req, res) {
 
   var evtObj={req:req,res:res,environment:environment};
   plugins.trigger("page.pre",evtObj);
-  
-  var pageItemLink=ItemInterpreter.create(req.url,true,function(itemLink) {
+
+  var pageItemLink=ItemInterpreter.create(req.path,true,function(itemLink) {
     if (itemLink.item.isValid()) {
       var evtObj={req:req,res:res,itemLink:itemLink,item:itemLink.item,environment:environment};
       plugins.trigger("page.preCompose",evtObj);
-      
+
       ItemInterpreter.compose(itemLink,function(final) {
         pagePost(200,final);
       },undefined,undefined,environment);
@@ -146,7 +146,7 @@ app.use('/', function(req, res) {
       plugins.trigger("page.post",evtObj);
       res.send(evtObj.code,evtObj.page);
     }
-        
+
   },environment);
 });
 
@@ -188,7 +188,7 @@ var server = app.listen(cg.http.port, cg.http.host, function() {
    * @param {int} code http status code
    * @param {Item} item item to be composed and send
    * @param {ItemLink} itemLink itemlink holding the item
-   * @param {String} page composed item string 
+   * @param {String} page composed item string
    * @param {Object} environment environment param object
    */
   plugins.registerEvent("page.post");

@@ -5,9 +5,8 @@ var DataPath=require("../../models/DataPath.js");
 var stat=require("../../../status.js");
 
 var StaticBuilder=function StaticBuilder(callback,itemLink,environment,childs,asChild,itemInterpreter) {
-  Builder.apply(this,[callback,itemLink,environment,childs,asChild]);
+  Builder.apply(this,[callback,itemLink,environment,childs,asChild,itemInterpreter]);
 
-  this.itemInterpreter=itemInterpreter;
   this.loadingItems=1;
   //this.loadedItems=new Map();
   this.loadedItems={
@@ -42,14 +41,14 @@ StaticBuilder.prototype.build=function build() {
       this._loadPlainText(i,segment);
     }
   }
-  
+
   this.setSegment();
 }
 
 StaticBuilder.prototype._loadItemLink=function _loadItemLink(index,itemLink) {
   if (itemLink.item.isValid()) {
     var childsCopy=this.childs.slice();
-    
+
     var self=this;
     this.itemInterpreter.compose(itemLink,function(itemStr) {
         self.loadedItems.set(index,itemStr);
@@ -62,7 +61,7 @@ StaticBuilder.prototype._loadItemLink=function _loadItemLink(index,itemLink) {
       itemLink.item.statusHeader.toString()+"\n"+
       itemLink.item.statusFile  .toString()+"\n");
     this.setSegment();
-  }           
+  }
 }
 
 StaticBuilder.prototype._loadPlainText=function _loadPlainText(index,text) {
@@ -123,7 +122,7 @@ StaticBuilder.prototype.setSegment=function() {
     for (var i=0; this.loadedItems.get(i)!=undefined; i++) {
       final+=this.loadedItems.get(i);
     }
-    
+
     this.callback(final);
   }
 }

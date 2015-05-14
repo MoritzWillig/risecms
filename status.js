@@ -18,7 +18,7 @@ Status.prototype={
     if (this.info!==undefined) { res+=" "+"<pre>"+escape(cjson(this.info,function(key,value) {
       if (value instanceof Buffer) { return value.toString(); }
       if ((value instanceof Array) && (value.length>=10)) { return "[|Array|>10]"; }
-      
+
       return value;
     },2))+"</pre>"; }
     return res;
@@ -44,11 +44,11 @@ Status.derive=function(code,description) {
 
     derivedStatus.prototype.code=code;
     derivedStatus.prototype.description=description;
-    
+
     if (code!=undefined) {
       status.codes[code]=derivedStatus;
     }
-    
+
     return derivedStatus;
   }
 };
@@ -109,7 +109,7 @@ status.states={ //tree hirachy of status codes
     FILE_LOADED:  status.proto.item.success.derive(503,"Item file was loaded"),
     INVALID_ID: Status.derive(504,"The id to be loaded was invalid"),
     HAS_NO_HEADER: Status.derive(505,"The given item type does not have a header"),
-    
+
     UNKNOWN_VARIABLE_ROOT: Status.derive(506,"The variable root can not be found"),
     UNKNOWN_VARIABLE: Status.derive(507,"The variable does not exist"),
     INVALID_VARIABLE_TYPE: Status.derive(508,"The type can not be included as a variable"),
@@ -123,6 +123,13 @@ status.states={ //tree hirachy of status codes
 
     static:{
       MISMATCHING_PARENTHESES: status.proto.item.proto.derive(300,"Mismatching parentheses in item text")
+    },
+
+    branch: {
+      NO_BRANCH: status.proto.item.proto.derive(580,"Branch does not exist"),
+      NO_OPTION: status.proto.item.proto.derive(581,"Branch does not provide a valid compose option"),
+      UNKNOWN_FUNCTION: status.proto.item.proto.derive(582,"Unknown branch selection"),
+      NO_CHILDS: status.proto.item.proto.derive(583,"Branch was not called as parent and therefore has no childs")
     }
   },
   database:{

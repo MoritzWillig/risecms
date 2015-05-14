@@ -47,6 +47,7 @@ Script.prototype.run=function run(args,options) {
   try {
     this.script.runInThisContext(options);
     global[this._globalArgsName].apply(undefined,args);
+    delete global[this._globalArgsName];
   } catch(e) {
     return e;
   }
