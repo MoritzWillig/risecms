@@ -39,7 +39,7 @@ var sourceTracker={
     var cssSources=[
       "css/debug.css"
     ];
-    
+
     var jsTagStr="";
     for (var i in jsSources) {
       jsTagStr+='<script src="'+data.environment.host+'/content/plugins/editor/'+jsSources[i]+'"></script>\n';
@@ -56,7 +56,9 @@ var sourceTracker={
     var res=data.page.replace(/<\/head>/i,debTag+"</head>");
     if (res.length==data.page.length) {
       //no header found, append script to end
-      res+=debTag;
+      //FIXME default behaviour temporarily changed to only add headers if the item
+      //contains a head tag to prevent including the editor twice
+      //res+=debTag;
     }
     data.page=res;
   },
@@ -68,7 +70,7 @@ var sourceTracker={
     var link=data.itemLink;
     var item=data.itemLink.item;
     var dataTag=((link.dataObj))?"data-dataId='"+(link.dataObj.header.id)+"'":"";
-    
+
     data.final=
       "\n<span class='riseCMSDebug' \
       data-tag='tag' \
@@ -78,7 +80,7 @@ var sourceTracker={
       "+dataTag+">\n"
       +data.final+
       "\n</span>\n";
-    
+
     //"\n<div class='riseCMSDebug' data-tag='open'  data-id='"+id+"'></div>\n"
     //"\n<div class='riseCMSDebug' data-tag='close' data-id='"+id+"'></div>\n",
   }
@@ -117,13 +119,13 @@ function isValidHeader(header,readonly) {
 function editorInit(pluginHandler) {
   pluginHandler.on("page.post",sourceTracker.insertDebugScript);
   pluginHandler.on("item.compose.post",sourceTracker.addItemTrace);
-  
+
   pluginHandler.registerRoute("plugins","/editor/",function(req,res,next) {
     if (checkRights(req.user)) {
       next();
       return;
     }
-    
+
     //not authenticated
     res.send({
       code:403,
@@ -240,7 +242,7 @@ function editorInit(pluginHandler) {
         return;
       }
     }
-    
+
     //create entry
     pageItem.setHeader(undefined,header,function(err,result) {
       var failed=(!stat.isSuccessfull(err));
@@ -269,7 +271,7 @@ function editorInit(pluginHandler) {
         });
         return;
       }
-      
+
       res.send({
         code:200,
         dir:files
@@ -327,7 +329,7 @@ function editorInit(pluginHandler) {
           });
           return;
         }
-        
+
         res.send({
           code:200,
           path:path
@@ -444,7 +446,7 @@ function paramObj(req) {
 }
 
 function resolveId(id) {
-  return fsanchor.resolve(id,"storage");  
+  return fsanchor.resolve(id,"storage");
 }
 
 

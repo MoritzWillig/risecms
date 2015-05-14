@@ -14,6 +14,7 @@ var StaticBuilder=require("./builders/staticBuilder.js");
 var TextBuilder=require("./builders/textBuilder.js");
 var ScriptBuilder=require("./builders/scriptBuilder.js");
 var DataBuilder=require("./builders/dataBuilder.js");
+var BranchBuilder=require("./builders/branchBuilder.js");
 var FallbackBuilder=require("./builders/fallbackBuilder.js");
 
 var itemInterpreter={
@@ -38,11 +39,11 @@ var itemInterpreter={
       }
 
       id=root.header.id;
-      
+
       //reset item
       root.itemStr=[]
       root.dataObj=undefined;
-      
+
       root.loadFile(cbFile);
 
       function cbFile(item) {
@@ -70,6 +71,7 @@ var itemInterpreter={
     var root=link.item;
     var itemLoaded=false;
     var parentLoaded=false;
+    var branchesCount=0;
 
     switch (root.header.type) {
     case "static":
@@ -83,6 +85,9 @@ var itemInterpreter={
       break;
     case "data":
       interpretData();
+      break;
+    case "branch":
+      interpretBranch();
       break;
     default:
       root.statusHeader=new stat.states.items.UNKNOWN_RESOURCE_TYPE();
@@ -98,7 +103,7 @@ var itemInterpreter={
     function interpretStatic() {
       var str=root.file;
       root.file=null; //free memory
-      
+
       //extract subitem strings
       var lastItemEnd=0;
       var res=findParentheses(str,"{{","}}","\\",lastItemEnd);
@@ -115,10 +120,10 @@ var itemInterpreter={
           str:str.substr(res[0]+"{{".length,res[1]-res[0]-"{{".length-"}}".length)
         };
         root.itemStr.push(si);
-        
+
         res=findParentheses(str,"{{","}}","\\",lastItemEnd);
       }
-      
+
       if ((res[0]!=-1) || (res[1]!=-1) || (res[0]>res[1])) {
         if ((res[0]!=-1) || (res[1]!=-1)) {
           var idx=(res[0]==-1)?res[1]:res[0];
@@ -135,7 +140,7 @@ var itemInterpreter={
             substr:sstr
           });
         }
-        
+
         checkCallback(true);
       } else {
         //save last plain text which does not contain item information
@@ -144,7 +149,7 @@ var itemInterpreter={
           root.itemStr.push(nItemStr);
         }
 
-        
+
         //split and parse subitem strings
         var subItemCt=1;
         for (var i=0; i<root.itemStr.length; i++) {
@@ -154,7 +159,7 @@ var itemInterpreter={
           }
           var s=root.itemStr[i].str;
           var last=0;
-          
+
           var id="";
           var addData=undefined;
           var script=undefined;
@@ -164,7 +169,7 @@ var itemInterpreter={
           if (idx!=-1) {
             id=s.substr(last,idx);
             s=s.substr(idx+1,s.length);
-            
+
             last=idx+1;
           } else {
             id=s;
@@ -257,10 +262,10 @@ var itemInterpreter={
             if (!isInline(aid)) {
               //parse as item
               subItemCt++;
-              
+
               //load sub item
               var il=itemInterpreter.create(aid,false,subDataParse);
-              
+
               function subDataParse() {
                 //search data paths
                 var cpath=[];
@@ -298,7 +303,7 @@ var itemInterpreter={
                   }
                   return obj;
                 }
-                
+
                 il.setData(aaddData);
                 il.data=repl(il.data);
                 il.modifiers={post:[ascript]}
@@ -316,10 +321,10 @@ var itemInterpreter={
           }
         }
 
-        //check if all items are already loaded - use this with itemCt=1 
+        //check if all items are already loaded - use this with itemCt=1
         //to prevent syncronous callbacks to return before the subItem.script could be set
         subItemCallback(undefined);
-        
+
         function isInline(str) { return ((str.length>0) && (str[0]=="$")); }
         function extractData(str) {
           if (isInline(str)) {
@@ -371,6 +376,56 @@ var itemInterpreter={
       checkCallback(true);
     }
 
+    function interpretBranch() {
+      try {
+        root.branchObj=JSON.parse(root.file);
+
+        functions=["get"];
+        if (typeof root.branchObj!="object") {
+          root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
+            action:"json does not match the branch object structure"
+          });
+        } else {
+          if (functions.indexOf(root.branchObj.switch.function)==-1) {
+            root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
+              action:"no valid branch function",
+              "function":root.branchObj.function
+            });
+          } else {
+            if (typeof root.branchObj.branches!="object") {
+              root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
+                action:"json does not match the branch object structure (object.branches must be an object)"
+              });
+            } else {
+              for (var b in root.branchObj.branches) {
+                var branch=root.branchObj.branches[b];
+                if (typeof branch!="object") {
+                  root.statusFile=new stat.states.items.INVALID_ITEM_FILE({
+                    action:"json does not match the branch object structure (object.branches.%branch% must be an object)"
+                  });
+                  break;
+                } else {
+                  if (branch.parent) {
+                    branchesCount++;
+
+                    branch.parent=itemInterpreter.create(branch.parent,false,function() {
+                      branchesCount--;
+                      checkCallback();
+                    },undefined).item;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+      } catch(e) {
+        root.statusFile=new stat.states.items.INVALID_ITEM_FILE({action:"parsing file as json"});
+      }
+
+      checkCallback(true);
+    }
+
     //load parent
     var parentName=root.header.parent;
     if (parentName!="") {
@@ -387,11 +442,11 @@ var itemInterpreter={
 
     function checkCallback(addItemLoaded) {
       if (addItemLoaded==true) { itemLoaded=true; }
-      if (itemLoaded && parentLoaded) {
+      if ((itemLoaded && parentLoaded) && (branchesCount==0)) {
         callback(link);
       }
     }
-    
+
     return link;
   },
 
@@ -420,7 +475,7 @@ var itemInterpreter={
       itemInterpreter.compose(link,callback,chLocal,false,environment);
     } else {
       //parse item
-      
+
       if (!itemLink.isValid()) {
         var evtObj={final:itemLink.getStatusString(),itemLink:itemLink,childs:childs,asChild:asChild,environment:environment};
         plugins.trigger("item.compose.post",evtObj);
@@ -428,7 +483,7 @@ var itemInterpreter={
         callback(evtObj.final);
         return;
       }
-      
+
       var builder=undefined;
       var builderCallback=function(result) {
         var evtObj={final:result,itemLink:itemLink,childs:childs,asChild:asChild,environment:environment};
@@ -437,22 +492,14 @@ var itemInterpreter={
         callback(evtObj.final);
       };
 
-      switch (item.header.type) {
-      case "static":
-        builder=new StaticBuilder(builderCallback,itemLink,environment,childs,asChild,this);
-        break;
-      case "text":
-        builder=new TextBuilder(builderCallback,itemLink,environment,childs,asChild);
-        break;
-      case "script":
-        builder=new ScriptBuilder(builderCallback,itemLink,environment,childs,asChild);
-        break;
-      case "data":
-        builder=new DataBuilder(builderCallback,itemLink,environment,childs,asChild);
-        break;
-      default:
-        builder=new FallbackBuilder(builderCallback,itemLink,environment,childs,asChild);
-        break;
+      var types=["static","text","script","data","branch"];
+      var builders=[StaticBuilder,TextBuilder,ScriptBuilder,DataBuilder,BranchBuilder];
+
+      var typeIdx=types.indexOf(item.header.type);
+      if (typeIdx!=-1) {
+        builder=new builders[typeIdx](builderCallback,itemLink,environment,childs,asChild,this);
+      } else {
+        builder=new FallbackBuilder(builderCallback,itemLink,environment,childs,asChild,this);
       }
 
       builder.build();
