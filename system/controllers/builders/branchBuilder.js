@@ -45,7 +45,7 @@ BranchBuilder.prototype.build=function build() {
     }
   }
 
-  if (branch.parent) { console.log("!new parent");
+  if (branch.parent) {
     //taken from item interpreter compose. but we skip the branch item itself and set a new parent
     var chLocal=this.childs.slice();
     //chLocal.push(this.itemLink); <- do not push - skip branch item

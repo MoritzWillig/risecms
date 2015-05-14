@@ -9,7 +9,7 @@ config={
     host:"%db.host%",
     user:"%db.user%",
     password:"%db.password%",
-    
+
     pageDb:"%db.pageDb%",
     pageTable:"%db.pageTable%",
     usersTable:"%db.users%",
