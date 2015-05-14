@@ -197,7 +197,7 @@ debugWindow={
     }
     return current;
   },
-  addContentDirectory:function(directory,name) {
+  addContentDirectory:function(directory,name,level) {
     var self=this;
     if (directory.type=="directory") {
       if (!directory.sub[name]) {
@@ -208,6 +208,12 @@ debugWindow={
           sub:{},
           gui:this._createDirectoryGui(name,function(e) { e.stopPropagation(); self._toogleDir(dir); })
         };
+
+        //expand only the first 3 levels
+        if (level>=3) {
+          dir.gui.content.css("display","none");
+        }
+
         directory.sub[name]=dir;
         this._appendToGui(directory,directory.sub[name]);
       } else {
@@ -236,7 +242,8 @@ debugWindow={
    * adds the data structure to the content elements
    * @param {object} data nested (non cirular) object. Objects are inserted as folders, strings as files
    */
-  addContent:function(data,directory) {
+  addContent:function(data,directory,level) {
+    if (!level) { level=0; }
     if (!directory) { directory=this._contentRoot; }
 
     for (var name in data) {
@@ -244,8 +251,8 @@ debugWindow={
       if (typeof element=="string") {
         debugWindow.addContentFile(directory,name);
       } else {
-        debugWindow.addContentDirectory(directory,name);
-        this.addContent(element,directory.sub[name]);
+        debugWindow.addContentDirectory(directory,name,level);
+        this.addContent(element,directory.sub[name],level+1);
       }
     }
   },
