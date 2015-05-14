@@ -1,103 +1,10 @@
 
 var enclosingTags=true;
 
-notificationForm={
-  gui:undefined,
-  queue:[],
-  updateQueue:function() {
-    var self=this;
-    var ts=this.getTimestamp();
-    var top=this.config.windowTopSpacing;
-
-    //update queue
-    for (var i in this.queue) {
-      var element=this.queue[i];
-      
-      //update transparency
-      var diff=ts-element.timestamp;
-
-      if (diff>=this.config.fadeAfter+this.config.fadeDurration) {
-        this.removeElement(i);
-        continue;
-      }
-
-      var transparency=0;
-      if (diff>this.config.fadeAfter) {
-        transparency=(diff-this.config.fadeAfter)/this.config.fadeDurration;
-      }
-      this.gui.css("opacity",1-transparency); //add correct css name
-
-      //update position
-      element.gui.css("top",top+this.config.elementSpacing);
-      top+=element.gui.height()+this.config.elementSpacing;
-    }
-
-    //setup/clear timer
-    if (this._timer==undefined) {
-      if (this.queue.length!=0) {
-        this._timer=setInterval(function() {
-          self.updateQueue();
-        },10);
-      }
-    } else {
-      if (this.queue.length==0) {
-        clearInterval(this._timer);
-      }
-    }
-  },
-  config: {
-    fadeAfter:2000,
-    fadeDurration:1000,
-    mouseMoveReset:true,
-    mouseClickRemove:true,
-    windowTopSpacing:10,
-    elementSpacing:5
-  },
-  getTimestamp:function() { return (+new Date()) },
-  display:function(message) {
-    var self=this;
-    var element={
-      gui:$(document.createElement("div")).addClass("displayElement")
-        .text(message).appendTo(this.gui).click(function() {
-        if (self.config.mouseClickRemove) {
-          self.removeElement(self.queue.indexOf(element));
-        }
-      }).mousemove(function() {
-        if (self.config.mouseMoveReset) {
-          var ts=self.getTimestamp();
-          for (var i in self.queue) {
-            self.queue[i].timestamp=ts;
-          }
-          self.updateQueue();
-        }
-      }),
-      timestamp:this.getTimestamp()
-    };
-    
-    this.queue.push(element);
-    this.updateQueue();
-  },
-  removeElement:function(index) {
-    var element=this.queue.splice(index,1)[0];
-    element.gui.remove();
-    this.updateQueue();
-  },
-  _timer:undefined,
-  _setup:function() {
-    this.gui=$(document.createElement("div")).addClass("displayForm").appendTo($("body"));
-  }
-}
-
 function display(str) {
   console.log(str);
   notificationForm.display(str);
 }
-
-(function() {
-  $(document).ready(function() {
-    notificationForm._setup();
-  });
-})();
 
 
 function findOrigin(node) {
@@ -117,7 +24,7 @@ function findOrigin(node) {
   } else {
     nodes=document.getElementsByClassName("riseCMSDebug");
     //console.log(nodes.length,"debug elements");
-    
+
     for (var i=0; i<nodes.length; i++) { var n=nodes[i];
       //ignore all elements before focused node
       var res=n.compareDocumentPosition(node);
@@ -125,7 +32,7 @@ function findOrigin(node) {
         (!(res&document.DOCUMENT_POSITION_CONTAINED_BY)) &&
         ( (res&document.DOCUMENT_POSITION_PRECEDING   ))
         )) { continue; }
-      
+
       //next closing element with no opening tag is parent
       var id=n.dataset.dataid?n.dataset.dataid:n.dataset.id;
       var debugData={ id:id, tag:n.dataset.tag, layoutId:n.dataset.id, dataId:n.dataset.dataid };
@@ -297,7 +204,7 @@ editorAPI={
     for (var i in items) {
       debugWindow.setWindowItem(items[i]);
     }
-    
+
     $(document).dblclick(function() {
       debugWindow.setVisibility(true);
 

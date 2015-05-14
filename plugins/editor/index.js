@@ -25,6 +25,7 @@ var sourceTracker={
     var debAnchorTag='<script>riseCMSHost="'+data.environment.host+'";</script>';
     var jsSources=[
       "js/libs/jQuery_v1.11.1.js",
+      "js/notificationForm.js",
       "js/DebugWindowTab.js",
       "js/DebugWindowFileTab.js",
       "js/DebugWindowLayout.js",
