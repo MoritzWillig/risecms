@@ -34,8 +34,6 @@ DebugWindowItemLayout=function(onSaveRequest) {
     ])
   ]);
   this.gui.activeButtons.push(saveButton);
-  
-  this._setupEditor();
 
   for (var i in editorAPI.headerColumns) {
     this.gui.header.values[editorAPI.headerColumns[i]]=debugWindow.gui.elements.input.clone()
@@ -50,6 +48,10 @@ DebugWindowItemLayout=function(onSaveRequest) {
       )
     );
   }
+
+  this._setupEditors();
+
+  this.setReadOnly(true);
 };
 
 DebugWindowItemLayout.prototype=new DebugWindowLayout();
@@ -57,22 +59,19 @@ DebugWindowItemLayout.prototype=new DebugWindowLayout();
 DebugWindowItemLayout.prototype.acceptedTabTypes=[DebugWindowTab];
 
 DebugWindowItemLayout.prototype.editorTypes={
-  "static":{ mode:"ace/mode/html" },
-  "script":{ mode:"ace/mode/javascript" },
-  "data":{ mode:"ace/mode/json" },
-  "text":{ mode:"ace/mode/text" }
+  "static":{ mode:"ace/mode/html", editor:"ace" },
+  "script":{ mode:"ace/mode/javascript", editor:"ace" },
+  "data":{ mode:undefined, editor:"json" },
+  "text":{ mode:"ace/mode/text", editor:"ace" }
 };
 
-DebugWindowItemLayout.prototype._setupEditor=function() {
-  this.editor=ace.edit(this.gui.editorScreen[0]);
-  this.editor.setTheme("ace/theme/kr_theme");
-  
-  this.editor.getSession().setTabSize(2);
-  this.editor.getSession().setUseSoftTabs(true);
-  this.editor.getSession().setUseWrapMode(false);
-  this.editor.setHighlightActiveLine(false);
-  this.editor.setValue("");
-  this.editor.setReadOnly(true);
+DebugWindowItemLayout.prototype._setupEditors=function() {
+  this.editors={};
+
+  this.editors.ace=new AceEditorWrapper();
+  this.editors.json=new JSONEditor();
+
+  this.setMode("text");
 };
 
 DebugWindowItemLayout.prototype.getGUI=function() {
@@ -95,18 +94,18 @@ DebugWindowItemLayout.prototype.display=function(tab) {
     var load=function() {
       if (dataLoaded && headerLoaded) {
         if (states.length!=0) {
+          self.setMode("text");
           self.reset("loading error: \n"+states.join("\n")+"\n"+self.activeTab.getStatusString());
         } else {
-          var type=self.editorTypes[headerData.type];
-          var mode;
-          if (type==undefined) {
-            mode="ace/mode/text";
+          var jsonTypes=["data","branch"];
+
+          if ((self.activeTab._cache) && (jsonTypes.indexOf(self.activeTab._cache.header.type)!=-1)) {
+            self.setMode("data");
           } else {
-            mode=type.mode;
+            self.setMode("text");
           }
-          
-          self.editor.getSession().setMode(mode);
-          self.editor.setValue(dataData,-1);
+
+          self.editor.setValue(dataData);
           self.setReadOnly(false);
 
           for (var i in editorAPI.headerColumns) {
@@ -183,9 +182,7 @@ DebugWindowItemLayout.prototype.reset=function(message) {
   }
 
   //clear editor
-  this.editor.getSession().setMode("ace/mode/text");
-  this.editor.setValue(message,-1);
-  this.editor.getSession().getUndoManager().markClean();
+  this.editor.setValue(message);
 }
 
 DebugWindowItemLayout.prototype.setReadOnly=function(readOnly) {
@@ -194,6 +191,26 @@ DebugWindowItemLayout.prototype.setReadOnly=function(readOnly) {
   for (var i in editorAPI.headerColumns) {
     this.gui.header.values[editorAPI.headerColumns[i]].prop("disabled",readOnly);
   }
-
   $(this.gui.activeButtons).each(function() { this.prop("disabled",readOnly); });
+}
+
+DebugWindowItemLayout.prototype.setMode=function(mode) {
+  var type=this.editorTypes[mode];
+  if (type==undefined) {
+    throw new Error("undefined editor mode");
+  }
+
+  var editor=this.editors[type.editor];
+  if (!editor) {
+    throw new Error("editor is not defined");
+  }
+  if (this.editor) {
+    this.editor.getDom().detach();
+  }
+  this.editor=editor;
+  this.gui.editorScreen.append(this.editor.getDom());
+
+  this.editor.setMode(type.mode);
+
+  this.editor.setValue(undefined);
 }

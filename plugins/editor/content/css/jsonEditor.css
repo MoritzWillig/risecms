@@ -1,0 +1,72 @@
+
+.typeSelOpt {
+  background: #ddd;
+  border:1px solid #aaa;
+  box-shadow:0px 0px 4px #555 inset;
+  padding:2px;
+
+  color:#000;
+
+  cursor:pointer;
+
+  display:inline-block;
+
+  margin-top:3px;
+  margin-bottom:3px;
+}
+
+.typeSelOpt:first-of-type {
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+
+  margin-left:3px;
+}
+
+.typeSelOpt:last-of-type {
+  border-top-right-radius: 3px;
+  border-bottom-right-radius: 3px;
+
+  margin-right:3px;
+}
+
+.typeSelOptActive {
+  background: #555;
+  box-shadow:0px 0px 4px #000 inset;
+  color:#fff;
+}
+
+.boolEditButton {
+  background: #ddd;
+  border:1px solid #aaa;
+  box-shadow:0px 0px 4px #555 inset;
+  padding:2px;
+
+  color:#000;
+
+  cursor:pointer;
+
+  display:inline-block;
+
+  margin-top:3px;
+  margin-bottom:3px;
+}
+
+.boolEditButton:first-of-type {
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+
+  margin-left:3px;
+}
+
+.boolEditButton:last-of-type {
+  border-top-right-radius: 3px;
+  border-bottom-right-radius: 3px;
+
+  margin-right:3px;
+}
+
+.boolEditButtonActive {
+  background: #555;
+  box-shadow:0px 0px 4px #000 inset;
+  color:#fff;
+}

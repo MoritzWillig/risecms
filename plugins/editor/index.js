@@ -24,8 +24,16 @@ var sourceTracker={
     //TODO remove hard-coded strings
     var debAnchorTag='<script>riseCMSHost="'+data.environment.host+'";</script>';
     var jsSources=[
+      "js/EventHandler.js",
       "js/libs/jQuery_v1.11.1.js",
       "js/notificationForm.js",
+      "js/aceEditorWrapper.js",
+      "js/EditorInterface.js",
+      "js/JSONNumberEditor.js",
+      "js/JSONObjectEditor.js",
+      "js/JSONArrayEditor.js",
+      "js/SimpleStringEditor.js",
+      "js/jsonEditor.js",
       "js/DebugWindowTab.js",
       "js/DebugWindowFileTab.js",
       "js/DebugWindowLayout.js",
@@ -38,7 +46,8 @@ var sourceTracker={
       "js/libs/ace-builds/src-noconflict/ace.js"
     ];
     var cssSources=[
-      "css/debug.css"
+      "css/debug.css",
+      "css/jsonEditor.css"
     ];
 
     var jsTagStr="";

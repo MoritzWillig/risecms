@@ -80,7 +80,7 @@ var notificationForm={
         this.queue[0].gui.css("opacity",1-transparency);
       }
 
-      //check if items a already at the right position according to the queue
+      //check if items are already at the right position according to the queue
       var top=0; //initial top value for queue item 0
 
       //get difference
@@ -88,7 +88,7 @@ var notificationForm={
       if (Math.abs(topDiff)>=1) {
         //items aren't positioned right
 
-        //strategy: half position difference on each step
+        //strategy: half position difference at each step
         topDiff=Math.floor(topDiff/2);
 
         for (var i=0; i!=this.queue.length; i++) {

@@ -19,8 +19,10 @@ DebugWindowFileLayout=function(onSaveRequest) {
     ])
   ]);
   this.gui.activeButtons.push(saveButton);
-  
-  this._setupEditor();
+
+  this._setupEditors();
+
+  this.setReadOnly(true);
 };
 
 DebugWindowFileLayout.prototype=new DebugWindowLayout();
@@ -28,22 +30,19 @@ DebugWindowFileLayout.prototype=new DebugWindowLayout();
 DebugWindowFileLayout.prototype.acceptedTabTypes=[DebugWindowFileTab];
 
 DebugWindowFileLayout.prototype.editorTypes={
-  "static":{ mode:"ace/mode/html" },
-  "script":{ mode:"ace/mode/javascript" },
-  "data":{ mode:"ace/mode/json" },
-  "text":{ mode:"ace/mode/text" }
+  "static":{ mode:"ace/mode/html", editor:"ace" },
+  "script":{ mode:"ace/mode/javascript", editor:"ace" },
+  "data":{ mode:undefined, editor:"json" },
+  "text":{ mode:"ace/mode/text", editor:"ace" }
 };
 
-DebugWindowFileLayout.prototype._setupEditor=function() {
-  this.editor=ace.edit(this.gui.editorScreen[0]);
-  this.editor.setTheme("ace/theme/kr_theme");
+DebugWindowFileLayout.prototype._setupEditors=function() {
+  this.editors={};
 
-  this.editor.getSession().setTabSize(2);
-  this.editor.getSession().setUseSoftTabs(true);
-  this.editor.getSession().setUseWrapMode(false);
-  this.editor.setHighlightActiveLine(false);
-  this.editor.setValue("");
-  this.editor.setReadOnly(true);
+  this.editors.ace=new AceEditorWrapper();
+  this.editors.json=new JSONEditor();
+
+  this.setMode("text");
 };
 
 DebugWindowFileLayout.prototype.getGUI=function() {
@@ -59,20 +58,15 @@ DebugWindowFileLayout.prototype.display=function(tab) {
     var dataLoaded=false;
     var states=[];
     var dataData=undefined;
-    
+
     var self=this;
     var load=function() {
       if (dataLoaded) {
         if (states.length!=0) {
           self.reset("loading error: \n"+states.join("\n")+"\n"+self.activeTab.getStatusString());
         } else {
-          var mode=self.editorTypes["text"].mode;
-          if (mode==undefined) {
-            mode="ace/mode/text";
-          }
-          
-          self.editor.getSession().setMode(mode);
-          self.editor.setValue(dataData,-1);
+          this.setMode("text");
+          self.editor.setValue(dataData);
           self.setReadOnly(false);
         }
       }
@@ -115,13 +109,32 @@ DebugWindowFileLayout.prototype.reset=function(message) {
   this.setReadOnly(true);
 
   //clear editor
-  this.editor.getSession().setMode("ace/mode/text");
-  this.editor.setValue(message,-1);
-  this.editor.getSession().getUndoManager().markClean();
+  this.editor.setValue(message);
 }
 
 DebugWindowFileLayout.prototype.setReadOnly=function(readOnly) {
   this.editor.setReadOnly(readOnly);
 
   $(this.gui.activeButtons).each(function() { this.prop("disabled",readOnly); });
+}
+
+DebugWindowFileLayout.prototype.setMode=function(mode) {
+  var type=this.editorTypes[mode];
+  if (type==undefined) {
+    throw new Error("undefined editor mode");
+  }
+
+  var editor=this.editors[type.editor];
+  if (!editor) {
+    throw new Error("editor is not defined");
+  }
+  if (this.editor) {
+    this.editor.getDom().detach();
+  }
+  this.editor=editor;
+  this.gui.editorScreen.append(this.editor.getDom());
+
+  this.editor.setMode(type.mode);
+
+  this.editor.setValue(undefined);
 }

@@ -111,13 +111,13 @@ DebugWindowTab.prototype.save=function(callback) {
 
 DebugWindowTab.prototype._updateCache=function(callback) {
   var self=this;
-  
+
   this._cache.callbackQueue.push(callback);
 
   if (this.item) {
     if (this._cache.queried==false) {
       this._cache.queried=true;
-    
+
       editorAPI.getItem(this.item.id,function(status,data) {
         self._cache.status=(status==undefined)?200:status;
         self._cache.description=data.error||data.description||"";
@@ -128,6 +128,7 @@ DebugWindowTab.prototype._updateCache=function(callback) {
       });
     }
   } else {
+    //FIXME ??
     asdf
     asdf
     //local data
@@ -139,7 +140,7 @@ DebugWindowTab.prototype._finishCacheUpdate=function() {
   this._cache.queried=false;
   var queue=this._cache.callbackQueue;
   this._cache.callbackQueue=[];
-  
+
   for (var i in queue) {
     queue[i].apply(this);
   }
