@@ -32,7 +32,7 @@ DebugWindowFileLayout.prototype.acceptedTabTypes=[DebugWindowFileTab];
 DebugWindowFileLayout.prototype.editorTypes={
   "static":{ mode:"ace/mode/html", editor:"ace" },
   "script":{ mode:"ace/mode/javascript", editor:"ace" },
-  "data":{ mode:undefined, editor:"json" },
+  "data":{ mode:"json", editor:"json" },
   "text":{ mode:"ace/mode/text", editor:"ace" }
 };
 

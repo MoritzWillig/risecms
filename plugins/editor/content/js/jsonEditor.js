@@ -93,9 +93,6 @@ JSONEditNode.prototype.detach=function detach() {
 
 JSONEditNode.prototype.getValue=function getValue() {
   return this._value;
-  saddsfafds
-  asdfdsfadsf
-  sdafdsfadfs
 }
 
 JSONEditNode.prototype._createWrapper=function _createWrapper() {
@@ -359,52 +356,136 @@ JSONEditNode.prototype.getDom=function getDom() {
  * @param {*} value data display
  */
 function JSONEditor(value) {
-  this._hasError=false;
-  this.root=new JSONEditNode();
-  this.setValue(value);
-  this.root.dom.wrapper.dom.frame
+  //setup gui
+  var self=this;
+  this._dom={
+    selectors:[
+      $("<span>",{
+        text:"json",
+        class:"typeSelOpt",
+        click:function() {
+          self.setMode("json");
+        }
+      }),
+      $("<span>",{
+        text:"plain",
+        class:"typeSelOpt",
+        click:function() {
+          self.setMode("plain");
+        }
+      })
+    ],
+    switch:$("<div>",{}),
+    root:$("<div>",{})
+  }
+  this._dom.switch.append(this._dom.selectors);
+  this._dom.root.append(this._dom.switch);
+
+  this._dom.root
     .css("height","100%")
     .css("overflow","auto")
     .css("background-color","#000")
     .css("color","#fff");
+
+  //setup editor
+  this.setMode("json");
+  this.setValue(value);
 };
-JSONEditor.prototype.root=undefined;
 
-JSONEditor.prototype.hasError=false;
-
+/**
+ * displayed the given json structure in the editor
+ * @param {string} value json string to be displayed
+ */
 JSONEditor.prototype.setValue=function setValue(value) {
-  var data;
-  this._hasError=false;
-  try {
-    data=JSON.parse(value);
-  } catch(e) {
-    data=value; //treat value as single json string
-    this._hasError=true;
+  if (value==undefined) {
+    this._editor.setValue("");
+    return;
   }
 
-  this.root.setValue(data);
+  var data;
+
+  switch (this._mode) {
+    case "json":
+      try {
+        this.setMode("json");
+        data=JSON.parse(value);
+        break;
+      } catch(e) {
+        //can not display json mode -> plain mode
+        this.setMode("plain");
+      }
+    case "plain":
+      data=value;
+      break;
+    default:
+      throw new Error("unknown type");
+  }
+
+  this._editor.setValue(data);
 }
 
+/**
+ * creates a json representation of the displayed values
+ * @return {string} json string of the internal value
+ */
 JSONEditor.prototype.getValue=function getValue() {
   var value;
-  var data=this.root.getValue();
-  if (!this._hasError) {
-    value=JSON.stringify(data);
-  } else {
-    //data is a (user modified) string in json format
-    value=data;
+  var data=this._editor.getValue();
+  switch (this._mode) {
+    case "json":
+      value=JSON.stringify(data);
+      break;
+    case "plain":
+      //data is a (user modified) string in json format
+      value=data;
+      break;
+    default:
+      throw new Error("unknown mode");
   }
   return value;
 }
 
-JSONEditor.prototype.setMode=function setMode(data) {
-  //we do not have any modes ... do nothing
+JSONEditor.prototype.setMode=function setMode(mode) {
+  if (mode==this._mode) { return; }
+
+  //remove editor
+  var value;
+  if (this._editor) {
+    value=this.getValue();
+    this._editor.getDom().detach();
+  }
+
+  //reset selectors
+  for (var i in this._dom.selectors) {
+    this._dom.selectors[i].removeClass("typeSelOptActive");
+  }
+
+  //setup new editor
+  switch (mode) {
+    case "json":
+      this._editor=new JSONEditNode();
+      this._dom.selectors[0].addClass("typeSelOptActive");
+      break;
+    case "plain":
+      this._editor=new SimpleStringEditor();
+      this._dom.selectors[1].addClass("typeSelOptActive");
+      break;
+    default:
+      throw new Error("unknown editor mode");
+  }
+  this._dom.root.append(this._editor.getDom());
+
+  //change mode
+  this._mode=mode;
+
+  //reinsert value
+  this.setValue(value);
 };
 
 JSONEditor.prototype.getDom=function getDom() {
-  return this.root.dom.wrapper.dom.frame;
+  return this._dom.root;
 }
 
 JSONEditor.prototype.setReadOnly=function setReadOnly(readOnly) {
-  this.root.setReadOnly(readOnly);
+  this._editor.setReadOnly(readOnly);
 }
