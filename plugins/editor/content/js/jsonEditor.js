@@ -92,7 +92,7 @@ JSONEditNode.prototype.detach=function detach() {
 }
 
 JSONEditNode.prototype.getValue=function getValue() {
-  return this._value;
+  return this.dom._editor.getValue();
 }
 
 JSONEditNode.prototype._createWrapper=function _createWrapper() {
