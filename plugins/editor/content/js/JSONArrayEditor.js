@@ -53,13 +53,13 @@ JSONArrayEditor.prototype.setValue=function setValue(value) {
   for (var i=0; i<value.length; i++) {
     var val=value[i];
 
-    var node=this._createNode(val);
-    this._nodes.push(node);
-    this._dom.nodes.append(node.wrapper);
+    var wrapper=this._createWrapper(val);
+    this._nodes.push(wrapper);
+    this._dom.nodes.append(wrapper.wrapper);
   }
 }
 
-JSONArrayEditor.prototype._createNode=function _createNode(value) {
+JSONArrayEditor.prototype._createWrapper=function _createWrapper(value) {
   var node=new JSONEditNode(value);
   //create node wrapper to insert new elements
   var self=this;
@@ -74,7 +74,7 @@ JSONArrayEditor.prototype._createNode=function _createNode(value) {
       $("<button>",{
         text:"-",
         click:function() {
-          self._removeNode(wrapper,node);
+          self._removeNode(wrapper);
         }
       }),
       node.getDom()
@@ -94,11 +94,11 @@ JSONArrayEditor.prototype._addNodeFirst=function _addNodeFirst() {
   /*
    * FIXME use the same value type like the node after (if there is any)
   */
-  var node=this._createNode("");
+  var wrapper=this._createWrapper("");
 
   var idx=0;
-  this._nodes.splice(idx,0,node);
-  this._dom.nodes.prepend(node.wrapper);
+  this._nodes.splice(idx,0,wrapper);
+  this._dom.nodes.prepend(wrapper.wrapper);
 }
 
 
@@ -110,13 +110,13 @@ JSONArrayEditor.prototype._addNode=function _addNode(wrapper,node) {
   /*
    * FIXME use the same value type like the node given
   */
-  var node=this._createNode("");
+  var wrapper=this._createWrapper("");
 
-  this._nodes.splice(idx+1,0,node);
-  this._nodes[idx].wrapper.after(node.wrapper);
+  this._nodes.splice(idx+1,0,wrapper);
+  this._nodes[idx].wrapper.after(wrapper.wrapper);
 }
 
-JSONArrayEditor.prototype._removeNode=function _removeNode(wrapper,node) {
+JSONArrayEditor.prototype._removeNode=function _removeNode(wrapper) {
   if (this._readOnly) { return; }
 
   var idx=this._getIndexByWrapper(wrapper);

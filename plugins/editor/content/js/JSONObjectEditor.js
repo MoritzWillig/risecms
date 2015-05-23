@@ -1,7 +1,4 @@
 
-//FIXME most of the vars named "node" are actually wrappers (*1). rename ...
-//(*1) _createNode no longer creates nodes. it returns wrapper objects
-
 /**
  * editor for json objects
  * @param {*} value initial value
@@ -26,7 +23,6 @@ function JSONObjectEditor(value) {
 
   this._readOnly=false;
 
-  //TODO check if this can already be replaced by a map
   this._wrappers=[];
   this._wrapperNames=[];
 
@@ -42,8 +38,8 @@ JSONObjectEditor.prototype=new EditorInterface(undefined);
 JSONObjectEditor.prototype.setValue=function setValue(value) {
   //remove old nodes
   for (var i in this._wrappers) {
-    var node=this._wrappers[i];
-    node.wrapper.detach();
+    var wrapper=this._wrappers[i];
+    wrapper.wrapper.detach();
   }
   this._wrappers.length=0;
   this._wrapperNames.length=0;
@@ -61,15 +57,15 @@ JSONObjectEditor.prototype.setValue=function setValue(value) {
   for (var i in value) {
     var val=value[i];
 
-    var node=this._createNode(i,val);
-    this._wrappers.push(node);
+    var wrapper=this._createWrapper(i,val);
+    this._wrappers.push(wrapper);
     this._wrapperNames.push(i);
 
-    this._dom.nodes.append(node.wrapper);
+    this._dom.nodes.append(wrapper.wrapper);
   }
 }
 
-JSONObjectEditor.prototype._createNode=function _createNode(name,value) {
+JSONObjectEditor.prototype._createWrapper=function _createWrapper(name,value) {
   var node=new JSONEditNode(value);
   //create node wrapper to insert new elements
   var self=this;
@@ -78,7 +74,7 @@ JSONObjectEditor.prototype._createNode=function _createNode(name,value) {
       $("<button>",{
         text:"-",
         click:function() {
-          self._removeNode(wrapper,node);
+          self._removeNode(wrapper);
         }
       }),
       $("<span>",{
@@ -108,21 +104,21 @@ JSONObjectEditor.prototype._addNode=function _addNode(name) {
   /*
    * FIXME use some value type ... (=> use/document some explicit strategy)
   */
-  var node=this._createNode(name,"");
+  var wrapper=this._createWrapper(name,"");
 
-  this._wrappers.push(node);
+  this._wrappers.push(wrapper);
   this._wrapperNames.push(name);
 
-  this._dom.nodes.append(node.wrapper);
+  this._dom.nodes.append(wrapper.wrapper);
 }
 
-JSONObjectEditor.prototype._removeNode=function _removeNode(wrapper,node) {
+JSONObjectEditor.prototype._removeNode=function _removeNode(wrapper) {
   if (this._readOnly) { return; }
 
   var idx=this._getIdxByWrapper(wrapper);
 
-  var node=this._wrappers[idx];
-  node.wrapper.detach();
+  var wrapper=this._wrappers[idx];
+  wrapper.wrapper.detach();
 
   this._wrappers.splice(idx,1);
   this._wrapperNames.splice(idx,1);
@@ -142,9 +138,9 @@ JSONObjectEditor.prototype._getIdxByWrapper=function _getIdxByWrapper(wrapper) {
 JSONObjectEditor.prototype.getValue=function getValue() {
   var value={};
   for (var i=0; i<this._wrappers.length; i++) {
-    var node=this._wrappers[i];
+    var wrapper=this._wrappers[i];
     var name=this._wrapperNames[i];
-    value[name]=node.node.getValue();
+    value[name]=wrapper.node.getValue();
   }
   return value;
 }
@@ -165,8 +161,8 @@ JSONObjectEditor.prototype.setReadOnly=function setReadOnly(readOnly) {
   this._readOnly=readOnly;
 
   for (var i in this._wrappers) {
-    var node=this._wrappers[i];
+    var wrapper=this._wrappers[i];
 
-    node.node.setReadOnly(this._readOnly);
+    wrapper.node.setReadOnly(this._readOnly);
   }
 }
