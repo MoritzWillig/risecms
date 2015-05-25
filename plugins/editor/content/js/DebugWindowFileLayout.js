@@ -65,7 +65,7 @@ DebugWindowFileLayout.prototype.display=function(tab) {
         if (states.length!=0) {
           self.reset("loading error: \n"+states.join("\n")+"\n"+self.activeTab.getStatusString());
         } else {
-          this.setMode("text");
+          self.setMode("text");
           self.editor.setValue(dataData);
           self.setReadOnly(false);
         }
