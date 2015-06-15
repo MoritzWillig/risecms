@@ -28,12 +28,7 @@ var sourceTracker={
       "js/libs/jQuery_v1.11.1.js",
       "js/notificationForm.js",
       "js/aceEditorWrapper.js",
-      "js/EditorInterface.js",
-      "js/JSONNumberEditor.js",
-      "js/JSONObjectEditor.js",
-      "js/JSONArrayEditor.js",
-      "js/SimpleStringEditor.js",
-      "js/jsonEditor.js",
+      "js/libs/jsonMEdit/libs/jsonMEdit.js",
       "js/DebugWindowTab.js",
       "js/DebugWindowFileTab.js",
       "js/DebugWindowLayout.js",
@@ -47,7 +42,7 @@ var sourceTracker={
     ];
     var cssSources=[
       "css/debug.css",
-      "css/jsonEditor.css"
+      "js/libs/jsonMEdit/resources/css/jsonEditor.css"
     ];
 
     var jsTagStr="";

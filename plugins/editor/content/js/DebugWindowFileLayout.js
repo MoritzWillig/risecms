@@ -40,7 +40,9 @@ DebugWindowFileLayout.prototype._setupEditors=function() {
   this.editors={};
 
   this.editors.ace=new AceEditorWrapper();
-  this.editors.json=new JSONEditor();
+
+  var provider=new DefaultJSONEditorProvider();
+  this.editors.json=new JSONEditor(undefined,provider);
 
   this.setMode("text");
 };

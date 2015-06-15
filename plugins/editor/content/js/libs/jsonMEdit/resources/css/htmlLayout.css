@@ -1,0 +1,149 @@
+
+body {
+  font-family:"Arial";
+}
+
+h1,h2,h3,h4 {
+  margin:0px;
+  padding:5px;
+}
+
+h1 { font-size:30pt; color:#fff; }
+h2 { font-size:23pt; }
+h3 { font-size:20pt; }
+
+div {
+  margin:0px;
+  padding:0px;
+}
+
+body {
+  margin:0px;
+  padding:0px;
+  background-color:#ccc;
+}
+
+#header {
+  height:100px;
+
+  background: #edc203; /* Old browsers */
+  background: -moz-linear-gradient(top,  #edc203 0%, #ff9701 100%); /* FF3.6+ */
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#edc203), color-stop(100%,#ff9701)); /* Chrome,Safari4+ */
+  background: -webkit-linear-gradient(top,  #edc203 0%,#ff9701 100%); /* Chrome10+,Safari5.1+ */
+  background: -o-linear-gradient(top,  #edc203 0%,#ff9701 100%); /* Opera 11.10+ */
+  background: -ms-linear-gradient(top,  #edc203 0%,#ff9701 100%); /* IE10+ */
+  background: linear-gradient(to bottom,  #edc203 0%,#ff9701 100%); /* W3C */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#edc203', endColorstr='#ff9701',GradientType=0 ); /* IE6-9 */
+
+  color:#fff;
+}
+
+#header h1 {
+  text-shadow:2px 2px 6px #000;
+}
+
+#header a {
+  color:#fff !important;
+  text-decoration:none;
+}
+
+#headNav a {
+  padding: 5px 7px 0px;
+}
+
+.pageAlign {
+  width:1000px;
+  margin:auto;
+}
+
+#headTitle {
+  height:77px;
+}
+
+.wrapper {
+  width:995px;
+  margin:auto;
+  display:table;
+  height:100%;
+  box-shadow:0px 0px 20px #f80, 0px 0px 20px #f80;
+
+  background-color:#ddd;
+  padding-top:3px;
+}
+
+#content {
+  height:100%;
+  display:table-cell;
+
+  padding-left:10px;
+  padding-right:10px;
+  padding-top:5px;
+
+  padding-bottom:20px;
+}
+
+#content a:link, #content a:visited {
+  color:#000;
+}
+
+#footer {
+  color:#fff;
+  height:26px;
+  background-color:#222;
+  padding:2px;
+
+  text-align:right;
+  font-size:10pt;
+}
+
+#footer a {
+  color:#fff !important;
+}
+
+
+#menu {
+  display: table-cell;
+  width: 220px;
+  border-right: 1px solid #222;
+  padding-left: 9px;
+  padding-bottom: 9px;
+}
+
+#menu ul {
+  font-family: 'Lucida Grande', 'Lucida Sans Unicode', arial, sans-serif;
+  font-size: 100%;
+  line-height: 17px;
+  padding:0;
+  margin:0;
+  list-style-type:none;
+}
+
+#menu h2 a, #menu h2 a:visited {
+    color: #A35A00;
+    text-decoration: none;
+    padding:10px;
+}
+
+#menu h3 {
+    margin-top: 12px;
+}
+
+#menu li {
+    margin-top: 6px;
+}
+
+#menu a {
+    color: #5C5954;
+}
+
+#menu a:visited {
+    color: #5C5954;
+}
+
+#menu a:active {
+    color: #5C5954;
+}
+
+#content h1, #content h2, #content h3 {
+  color:#000;
+}

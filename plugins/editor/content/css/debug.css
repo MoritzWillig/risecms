@@ -290,3 +290,18 @@
   height:25px;
 
 }
+
+
+.JSONEditor {
+  background-color: #000;
+  height: 100%;
+  overflow: scroll;
+}
+
+.JSONEditor span {
+  color:#fff;
+}
+
+.typeSelOpt {
+  color:#222 !important;
+}

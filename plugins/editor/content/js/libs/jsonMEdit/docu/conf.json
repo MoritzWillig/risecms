@@ -1,0 +1,27 @@
+{
+    "tags": {
+        "allowUnknownTags": true,
+        "dictionaries": ["jsdoc","closure"]
+    },
+    "source": {
+        "include": ["../src/","../README.md"],
+        "includePattern": ".+\\.js(doc)?$",
+        "excludePattern": "(^|\\/|\\\\)_"
+    },
+    "plugins": [],
+    "templates": {
+        "cleverLinks": true,
+        "monospaceLinks": true,
+        "default": {
+            "layoutFile": "../resources/templates/rol/tmpl.html",
+            "outputSourceFiles":false
+        }
+    },
+    "opts": {
+        "encoding": "utf8",
+        "destination": "./",
+        "recurse": true
+    }
+
+}
+

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>JSON M Edit - Home - Documentation</title>
+    <link rel="SHORTCUT ICON" href="../resources/media/images/jsonEdit16.ico">
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <!--<link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">-->
+
+    <link rel="stylesheet" type="text/css" href="../resources/css/htmlLayout.css">
+  </head>
+  <body>
+    <div id="header">
+      <div class="pageAlign">
+        <div id="headTitle">
+          <h1>JSON M Edit <small> - Home - Documentation</small></h1>
+        </div>
+        <div id="headNav">
+          <a href="../examples/index.html">Examples</a> |
+          <a href="../docu/index.html">Documentation</a> |
+          <a href="../tests/index.html">Tests</a>
+        </div>
+      </div>
+    </div>
+    <div class="wrapper">
+      <div id="menu">
+        <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="DefaultJSONEditorProvider.html">DefaultJSONEditorProvider</a></li><li><a href="EventHandler.html">EventHandler</a></li><li><a href="Interface.html">Interface</a></li><li><a href="InterfaceError.html">InterfaceError</a></li><li><a href="JSONArrayEditor.html">JSONArrayEditor</a></li><li><a href="JSONBooleanEditor.html">JSONBooleanEditor</a></li><li><a href="JSONDynamicNode.html">JSONDynamicNode</a></li><li><a href="JSONEditor.html">JSONEditor</a></li><li><a href="JSONNullEditor.html">JSONNullEditor</a></li><li><a href="JSONNumberEditor.html">JSONNumberEditor</a></li><li><a href="JSONObjectEditor.html">JSONObjectEditor</a></li><li><a href="SimpleStringEditor.html">SimpleStringEditor</a></li></ul><h3>Interfaces</h3><ul><li><a href="IEditor.html">IEditor</a></li><li><a href="IEditorProvider.html">IEditorProvider</a></li><li><a href="IEventHandler.html">IEventHandler</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ClassHelper">ClassHelper</a></li><li><a href="global.html#value">value</a></li></ul>
+      </div>
+      <div id="content">
+        
+
+
+
+    
+
+
+    <h3> </h3>
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+    <section>
+        <article><h1>JSON M Edit</h1><p>A minimalistic JSON Editor.</p>
+<h1>Building &amp; Include</h1><p>Copy the repo into a public accessible directory (marked as <code>{$PATH}</code> in the
+code below).</p>
+<h2>Include to a web page</h2><p>JSONMEdit is build with the <a href="https://developers.google.com/closure/compiler/">Closure Compiler</a> to cretate a single code file which can be included. Go to <a href="resources/closureCompiler">resources/closureCompiler</a> and run the <a href="resources/closureCompiler/closureCompiler.sh">closureCompiler.sh</a> to generate a minified version of JSONMEdit. The minified file is then placed under <a href="libs/JSONMedit.js">libs/JSONMedit.js</a> and can be included as follows:</p>
+<pre class="prettyprint source lang-html"><code>&lt;!-- if you already include query you can skip this include -->
+&lt;script src=&quot;{$PATH}/libs/jQuery_v1.11.1.js&quot;>&lt;/script>
+
+&lt;!-- include JSONMEdit -->
+&lt;script src=&quot;{$PATH}/libs/JSONMedit.js&quot;>&lt;/script>
+&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;{$PATH}/resources/css/jsonEditor.css&quot;></code></pre><h2>Debugging &amp; Developement</h2><p>For debugging or developing include the uncompressed code into your html:</p>
+<pre class="prettyprint source lang-html"><code>&lt;!-- if you already include query you can skip this include -->
+&lt;script src=&quot;{$PATH}/libs/jQuery_v1.11.1.js&quot;>&lt;/script>
+
+&lt;!-- include interfaces -->
+&lt;script src=&quot;{$PATH}/src/interfaces/Interface.js&quot;>&lt;/script>
+&lt;script src=&quot;{$PATH}/src/interfaces/IEventHandler.js&quot;>&lt;/script>
+&lt;script src=&quot;{$PATH}/src/interfaces/IEditor.js&quot;>&lt;/script>
+&lt;script src=&quot;{$PATH}/src/interfaces/IEditorProvider.js&quot;>&lt;/script>
+
+&lt;!-- include code -->
+&lt;script src=&quot;{$PATH}/src/EventHandler.js&quot;>&lt;/script>
+&lt;script src=&quot;{$PATH}/src/JSONNullEditor.js&quot;>&lt;/script>
+&lt;script src=&quot;{$PATH}/src/JSONNumberEditor.js&quot;>&lt;/script>
+&lt;script src=&quot;{$PATH}/src/JSONBooleanEditor.js&quot;>&lt;/script>
+&lt;script src=&quot;{$PATH}/src/JSONObjectEditor.js&quot;>&lt;/script>
+&lt;script src=&quot;{$PATH}/src/JSONArrayEditor.js&quot;>&lt;/script>
+&lt;script src=&quot;{$PATH}/src/SimpleStringEditor.js&quot;>&lt;/script>
+&lt;script src=&quot;{$PATH}/src/jsonEditor.js&quot;>&lt;/script>
+&lt;script src=&quot;{$PATH}/src/DefaultJSONEditorProvider.js&quot;>&lt;/script>
+
+&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;{$PATH}/resources/css/jsonEditor.css&quot;></code></pre><h3>Generating documentation</h3><p>Documentation is generated with <a href="https://github.com/jsdoc3/jsdoc">JSDoc</a>. Change to <a href="docu/">docu/</a> and run <a href="docu/jsDocGen.sh">docu/jsDocGen.sh</a> to create a new documentation of the code. (The used jsdoc template does not include any timestamps or version numbers. Therefore the documetation should stay the same if the the code does not change and only a changed documentation in code is added to git commits)</p>
+<h1>Usage</h1><p>Every Editor included, implements the IEditor interface and therefore can be
+used on its own to edit their specific JSON type.</p>
+<h2>Dynamic JSON Editor</h2><p>The <code>JSONDynamicNode</code>-Editor dynamically chooses the right Editor for the JSON
+value given. Be carefull when passing arbitrary objects (especially if not
+parsed from JSON strings) and make sure to only pass objects with non circular
+references. No check for circlular references is done and therefore the
+application will loop infinitely if such an object is passed as a parameter.</p>
+<h2>Editor Providers</h2><p>For simple selection by json names the <code>DefaultJSONEditorProvider</code> can be used.
+A self implemented version of the <code>IEditorProvider</code> also provides a way of
+controlling sub editors if you wish to replace e.g. the boolean editor, of a
+<code>JSONDynamicNode</code>-Editor.</p>
+<pre class="prettyprint source lang-js"><code>var provider=new DefaultJSONEditorProvider();
+
+/* create a dynamic json editor. See the documentation for other accepted
+ * constants (&quot;string&quot;, &quot;number&quot;, &quot;array&quot;, etc.)
+ */
+var editor=provider.requestEditor(&quot;json&quot;);
+
+//set value
+//editor.setValue([1,2,3,4]);
+
+//attach editor to your gui
+//editor.getDom().attachTo(some jquery node);
+
+...
+
+//if the editor is not needed anymore
+provider.disposeEditor(editor);</code></pre><h2>JSON Strings</h2><p>For JSON strings the <code>JSONEditor</code> can be used. It parses the JSON string
+and displays it in a <code>JSONDynamicNode</code> (for non valid JSON string a fallback
+to text mode is done).</p>
+<pre class="prettyprint source lang-js"><code>var provider=new DefaultJSONEditorProvider();
+
+//create a json editor which can handle json strings
+editor=new JSONEditor(undefined,provider);
+
+//set value
+//editor.setValue(&quot;{\&quot;helloWorld\&quot;:[1,2,3,4]}&quot;);
+
+//attach editor to your gui
+//editor.getDom().attachTo(some jquery node);
+
+...
+
+//if the editor is not needed anymore
+provider.disposeEditor(editor);</code></pre><h1>License</h1><p>The MIT License (MIT)</p>
+<p>Copyright (c) 2015 Moritz Willig</p>
+<p>Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the &quot;Software&quot;), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:</p>
+<p>The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.</p>
+<p>THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.</p></article>
+    </section>
+
+
+
+
+
+
+
+        <script> prettyPrint(); </script>
+        <script src="scripts/linenumber.js"> </script>
+      </div>
+    </div>
+    <div id="footer">
+      <footer>
+        Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc</a>
+      </footer>
+      <div class="pageAlign">
+    </div>
+    </div>
+  </body>
+</html>

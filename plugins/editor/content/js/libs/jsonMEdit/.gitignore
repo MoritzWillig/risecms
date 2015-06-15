@@ -1,0 +1,5 @@
+#since this file needs to be modified to link to the correct closure compiler path exclude this one 
+resources/closureCompiler/closureCompiler.sh
+
+#output location of the closure compiled code
+libs/jsonMEdit.js

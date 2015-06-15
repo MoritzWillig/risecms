@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>JSON M Edit - Class: JSONEditor - Documentation</title>
+    <link rel="SHORTCUT ICON" href="../resources/media/images/jsonEdit16.ico">
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <!--<link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">-->
+
+    <link rel="stylesheet" type="text/css" href="../resources/css/htmlLayout.css">
+  </head>
+  <body>
+    <div id="header">
+      <div class="pageAlign">
+        <div id="headTitle">
+          <h1>JSON M Edit <small> - Class: JSONEditor - Documentation</small></h1>
+        </div>
+        <div id="headNav">
+          <a href="../examples/index.html">Examples</a> |
+          <a href="../docu/index.html">Documentation</a> |
+          <a href="../tests/index.html">Tests</a>
+        </div>
+      </div>
+    </div>
+    <div class="wrapper">
+      <div id="menu">
+        <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="DefaultJSONEditorProvider.html">DefaultJSONEditorProvider</a></li><li><a href="EventHandler.html">EventHandler</a></li><li><a href="Interface.html">Interface</a></li><li><a href="InterfaceError.html">InterfaceError</a></li><li><a href="JSONArrayEditor.html">JSONArrayEditor</a></li><li><a href="JSONBooleanEditor.html">JSONBooleanEditor</a></li><li><a href="JSONDynamicNode.html">JSONDynamicNode</a></li><li><a href="JSONEditor.html">JSONEditor</a></li><li><a href="JSONNullEditor.html">JSONNullEditor</a></li><li><a href="JSONNumberEditor.html">JSONNumberEditor</a></li><li><a href="JSONObjectEditor.html">JSONObjectEditor</a></li><li><a href="SimpleStringEditor.html">SimpleStringEditor</a></li></ul><h3>Interfaces</h3><ul><li><a href="IEditor.html">IEditor</a></li><li><a href="IEditorProvider.html">IEditorProvider</a></li><li><a href="IEventHandler.html">IEventHandler</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ClassHelper">ClassHelper</a></li><li><a href="global.html#value">value</a></li></ul>
+      </div>
+      <div id="content">
+        
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>
+        JSONEditor
+        </h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+    
+
+    <h4 class="name" id="JSONEditor"><span class="type-signature"></span>new JSONEditor<span class="signature">(value, provider, classPrefix)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    Editor for editing json strings
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>value</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">initial value</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>provider</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="IEditorProvider.html">IEditorProvider</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">a editor provider providing a json ("json") and text ("text") editor</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>classPrefix</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">css class prefix for dom elements</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="implements">Implements:</dt>
+    <dd class="implements"><ul>
+        
+            <li><a href="IEditor.html">IEditor</a></li>
+        
+    </ul></dd>
+    
+
+    
+        <dt class="mixes">Mixes In:</dt>
+
+        <dd class="mixes"><ul>
+        
+            <li>{<a href="EventHandler.html">EventHandler</a>}</li>
+        
+        </ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    <h4 class="name" id="getDom"><span class="type-signature"></span>getDom<span class="signature">()</span><span class="type-signature"> &rarr; {JQueryDOMNode}</span></h4>
+
+    
+
+
+
+<div class="description">
+    get the dom node which contains the editor
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="implements">Implements:</dt>
+    <dd class="implements"><ul>
+        
+            <li><a href="IEditor.html#getDom">IEditor#getDom</a></li>
+        
+    </ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    dom node representing the editor
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">JQueryDOMNode</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="getValue"><span class="type-signature"></span>getValue<span class="signature">()</span><span class="type-signature"> &rarr; {string|undefined}</span></h4>
+
+    
+
+
+
+<div class="description">
+    get the value currently represented in the editor or undefined if not in a valid state
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="implements">Implements:</dt>
+    <dd class="implements"><ul>
+        
+            <li><a href="IEditor.html#getValue">IEditor#getValue</a></li>
+        
+    </ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    value value represented in the editor
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">string</span>
+|
+
+<span class="param-type">undefined</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="setMode"><span class="type-signature"></span>setMode<span class="signature">(mode)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    change the mode the editor uses to interpret data
+accepted modes:
+json: edits the json structure with json editors
+text: displays the json string in a text editor
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>mode</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">mode name</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="implements">Implements:</dt>
+    <dd class="implements"><ul>
+        
+            <li><a href="IEditor.html#setMode">IEditor#setMode</a></li>
+        
+    </ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        If mode is none of the accepted modes
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type">Error</span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="setReadOnly"><span class="type-signature"></span>setReadOnly<span class="signature">(readOnly)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    set the editor into readonly or read/write mode
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>readOnly</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">if true readonly is enabled otherwise writing is allowed</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="implements">Implements:</dt>
+    <dd class="implements"><ul>
+        
+            <li><a href="IEditor.html#setReadOnly">IEditor#setReadOnly</a></li>
+        
+    </ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="setValue"><span class="type-signature"></span>setValue<span class="signature">(value)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    displayed the given json structure in the editor
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>value</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">json string to be displayed</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="implements">Implements:</dt>
+    <dd class="implements"><ul>
+        
+            <li><a href="IEditor.html#setValue">IEditor#setValue</a></li>
+        
+    </ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+        <script> prettyPrint(); </script>
+        <script src="scripts/linenumber.js"> </script>
+      </div>
+    </div>
+    <div id="footer">
+      <footer>
+        Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc</a>
+      </footer>
+      <div class="pageAlign">
+    </div>
+    </div>
+  </body>
+</html>
