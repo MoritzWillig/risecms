@@ -127,6 +127,9 @@ app.use('/', function(req, res) {
   plugins.trigger("page.pre",evtObj);
 
   var pageItemLink=ItemInterpreter.create(req.path,true,function(itemLink) {
+    //put base item into environment
+    environment.base=itemLink;
+
     if (itemLink.item.isValid()) {
       var evtObj={req:req,res:res,itemLink:itemLink,item:itemLink.item,environment:environment};
       plugins.trigger("page.preCompose",evtObj);
@@ -148,6 +151,8 @@ app.use('/', function(req, res) {
       res.send(evtObj.code,evtObj.page);
     }
 
+    //clean up environment
+    environment.base=undefined;
   },environment);
 });
 

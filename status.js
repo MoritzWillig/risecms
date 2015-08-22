@@ -114,6 +114,7 @@ status.states={ //tree hirachy of status codes
     UNKNOWN_VARIABLE: Status.derive(507,"The variable does not exist"),
     INVALID_VARIABLE_TYPE: Status.derive(508,"The type can not be included as a variable"),
     ITEM_HAS_NO_CHILD: Status.derive(509,"The item has no child"),
+    LINK_HAS_NO_ITEM: status.proto.item.proto.derive(510,"The accessed item link contains no item"),
 
     script:{
       TIMEOUT:Status.derive(550,"The script took to long to complete"),

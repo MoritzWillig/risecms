@@ -31,7 +31,7 @@ PathResolver={
       }
       resPaths.push(datapath);
     }
-    
+
     if (datapath.path.length<=1) {
       callback(new stat.states.items.UNKNOWN_VARIABLE({
         msg:"unknown data path (path length < 2)",
@@ -111,64 +111,93 @@ PathResolver={
 
         //check inline data
         var nextSection=path[pathIndex+1];
-        //check if the item is to be composed or its data accessed
-        if ((nextSection=="text") && (pathIndex+1==path.length-1)) {
-          currentValue.end=true;
-          rpDiscard=true;
+        //check if the item has to be composed or it's header or data has to be accessed
+        switch (nextSection) {
+          case "$text": //compose item
+            currentValue.end=true;
+            rpDiscard=true;
 
-          if (forceSync) {
-            callback(new stat.states.items.UNKNOWN_VARIABLE({
-              msg:"item composing is not allowed with syncronous resolve"
-            }));
-          } else {
-            var asChild=false;
-            if (path[0]=="child") {
-              asChild=true;
-            }
-
-            var localChilds;
-            if ((childs.length!=0) && (childs[childs.length-1]==currentValue.h)) {
-              //if we are composing childs and we are going back the child chain
-              //the remaining childs in the chain are childs of our child link
-              //TODO: check if this implementation holds true. (note that we are using itemLink, which are identifing links)
-              //TODO: check if cases exist, were we are parsing an item which has childs, but passing an empty child chain were we should not
-              localChilds=childs.slice();
-              localChilds.pop();
+            if (forceSync) {
+              callback(new stat.states.items.UNKNOWN_VARIABLE({
+                msg:"item composing is not allowed with syncronous resolve"
+              }));
             } else {
-              localChilds=[];
-            }
+              var asChild=false;
+              if (path[0]=="child") {
+                asChild=true;
+              }
 
-            itemInterpreter.compose(
-              currentValue.h,
-              function(itemStr) {
-                callback(new stat.states.items.OK(),itemStr);
-              },
-              localChilds,asChild,environment
-            );
-          }
-        } else {
-          //access data
-          if (currentValue.h.data) {
-            //look ahead if next path section matches
-            if (currentValue.h.data[nextSection]!=undefined) {
-              currentValue.h=currentValue.h.data;
-              return;
-            } else {
-              var check=checkData(currentValue.h.item);
-              if (check.err) {
-                currentValue.end=true;
-                rpDiscard=true;
-                callback(new stat.states.items.INVALID_ITEM_FILE({
-                  msg:check.err,
+              var localChilds;
+              if ((childs.length!=0) && (childs[childs.length-1]==currentValue.h)) {
+                //if we are composing childs and we are going back the child chain
+                //the remaining childs in the chain are childs of our child link
+                //TODO: check if this implementation holds true. (note that we are using itemLink, which are identifing links)
+                //TODO: check if cases exist, were we are parsing an item which has childs, but passing an empty child chain were we should not
+                localChilds=childs.slice();
+                localChilds.pop();
+              } else {
+                localChilds=[];
+              }
+
+              itemInterpreter.compose(
+                currentValue.h,
+                function(itemStr) {
+                  callback(new stat.states.items.OK(),itemStr);
+                },
+                localChilds,asChild,environment
+              );
+            }
+            break;
+          case "$header": //access header fields
+            currentValue.end=true;
+            rpDiscard=true;
+
+
+            if (currentValue.h.item!=undefined) {
+              var headerField=path[pathIndex+2];
+              var data=currentValue.h.item.header[headerField];
+
+              if (data===undefined) {
+                callback(new stat.states.items.UNKNOWN_VARIABLE({
+                  msg:"accessing header field",
                   path:datapath.path,
-                  errSection:lastIdx
+                  errSection:lastIdx+2
                 }));
               } else {
-                currentValue.h=check.data;
+                callback(new stat.states.items.OK(),data);
+              }
+            } else {
+              callback(new stat.states.items.LINK_HAS_NO_ITEM({
+                path:datapath.path,
+                errSection:lastIdx
+              }));
+            }
+
+            break;
+          default: //access data
+            //access data
+            if (currentValue.h.data) {
+              //look ahead if next path section matches
+              if (currentValue.h.data[nextSection]!=undefined) {
+                currentValue.h=currentValue.h.data;
+                return;
+              } else {
+                var check=checkData(currentValue.h.item);
+                if (check.err) {
+                  currentValue.end=true;
+                  rpDiscard=true;
+                  callback(new stat.states.items.INVALID_ITEM_FILE({
+                    msg:check.err,
+                    path:datapath.path,
+                    errSection:lastIdx
+                  }));
+                } else {
+                  currentValue.h=check.data;
+                }
               }
             }
-          }
-        }
+            break;
+        } //end switch
       } else {
         if (currentValue.h instanceof DataPath) {
           //try resolving data path
@@ -189,7 +218,7 @@ PathResolver={
     },function(path, pathIndex, currentValue, self) {
       if (currentValue.next instanceof ItemLink) {
         var nextSection=path[pathIndex];
-        
+
         //test inline data
         if (currentValue.next.data) {
           if (currentValue.next.data[nextSection]!=undefined) {
