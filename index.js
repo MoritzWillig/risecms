@@ -101,7 +101,7 @@ plugins.setup(app,{
   plugins:pluginRouter
 });
 
-
+/*
 debugRouter=express.Router();
 debugRouter.use('/heapdump', function(req, res, next) {
   var path="./snapshots/heapdump_"+(+new Date())+".heapsnapshot";
@@ -110,6 +110,7 @@ debugRouter.use('/heapdump', function(req, res, next) {
   res.send("ok");
 });
 app.use("/",debugRouter);
+*/
 
 /*
  * CMS routing
