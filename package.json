@@ -5,7 +5,7 @@
   "author": "Moritz Willig <moritz.willig@gmail.com>",
   "dependencies": {
     "express": "4.1.x",
-    "mysql": "2.5.x",
+    "mysql": "2.14.x",
     "rimraf": "2.2.x",
     "body":"4.4.x",
     "cookie-parser":"1.1.x",
