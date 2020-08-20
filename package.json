@@ -12,7 +12,7 @@
     "express-session":"1.2.x",
     "redis":"0.10.x",
     "connect-redis":"2.0.x",
-    "bcrypt":"0.8.x",
+    "bcrypt":"5.0.x",
     "json-stringify-safe":"5.0.x"
   },
   "engine": "node 0.11.x"
